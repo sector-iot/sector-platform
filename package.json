@@ -24,7 +24,7 @@
   "engines": {
     "node": ">=18"
   },
-  "name": "with-prisma",
+  "name": "sector-platform",
   "dependencies": {
     "@prisma/client": "latest"
   },
