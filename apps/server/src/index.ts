@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { toNodeHandler } from "better-auth/node";
-import { router as apiRouter } from './routes/hello';
+import { router as apiRouter } from './routes';
 import { auth } from './lib/auth';
 
 // Load environment variables
