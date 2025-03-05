@@ -1,9 +1,5 @@
-import { prisma } from "@repo/database";
+import { redirect } from "next/navigation";
 
-export default async function IndexPage() {
-  return (
-    <div>
-      <h1>Hello World</h1>
-    </div>
-  );
+export default function Home() {
+  redirect("/dashboard");
 }
