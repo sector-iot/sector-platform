@@ -8,7 +8,6 @@ const deviceSchema = {
   create: z.object({
     name: z.string().min(1, "Name is required"),
     model: z.nativeEnum(DeviceModel).default(DeviceModel.ESP32),
-    userId: z.string().min(1, "UserId is required"),
   }),
   update: z.object({
     name: z.string().optional(),
@@ -21,9 +20,16 @@ const deviceSchema = {
 
 export const deviceController = {
   async createDevice(req: Request, res: Response) {
+    const user = req.user;
     try {
       const data = deviceSchema.create.parse(req.body);
-      const device = await prisma.device.create({ data });
+
+      const device = await prisma.device.create({
+        data: {
+          ...data,
+          userId: user?.id as string,
+        }
+      });
       res.status(201).json(device);
     } catch (error) {
       console.error('Error creating device:', error);
@@ -34,8 +40,12 @@ export const deviceController = {
   async getAllDevices(req: Request, res: Response) {
     try {
       const devices = await prisma.device.findMany({
-        include: { user: true }
+        include: { user: true },
+        where: {
+          userId: req.user?.id as string
+        }
       });
+      console.log(devices)
       res.json(devices);
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -63,7 +73,7 @@ export const deviceController = {
     try {
       const { id } = deviceSchema.id.parse(req.params);
       const data = deviceSchema.update.parse(req.body);
-      
+
       const device = await prisma.device.update({
         where: { id },
         data
