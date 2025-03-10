@@ -28,7 +28,7 @@ import {
 import { GitBranch, GitCommit, GitPullRequest } from "lucide-react";
 import { useState } from "react";
 
-const repositories = [
+const initialRepositories = [
   {
     id: "repo-001",
     name: "Temperature Sensor Firmware",
@@ -60,6 +60,30 @@ const repositories = [
 
 export default function RepositoriesPage() {
   const [isAddingRepo, setIsAddingRepo] = useState(false);
+  const [repositories, setRepositories] = useState(initialRepositories);
+  const [newRepo, setNewRepo] = useState({
+    name: "",
+    url: "",
+    branch: "main",
+  });
+
+  const handleAddRepository = () => {
+    if (!newRepo.name || !newRepo.url) return; // Basic validation
+
+    const newRepository = {
+      id: `repo-${repositories.length + 1}`,
+      name: newRepo.name,
+      url: newRepo.url,
+      branch: newRepo.branch,
+      lastCommit: "Initial commit",
+      devices: 0, // Assume no devices connected yet
+      lastUpdate: new Date().toISOString().slice(0, 19).replace("T", " "),
+    };
+
+    setRepositories((prev) => [...prev, newRepository]);
+    setIsAddingRepo(false);
+    setNewRepo({ name: "", url: "", branch: "main" }); // Reset the form
+  };
 
   return (
     <div className="p-8">
@@ -84,15 +108,34 @@ export default function RepositoriesPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Repository Name</Label>
-                <Input id="name" placeholder="Enter repository name" />
+                <Input
+                  id="name"
+                  value={newRepo.name}
+                  onChange={(e) =>
+                    setNewRepo((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Enter repository name"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="url">Repository URL</Label>
-                <Input id="url" placeholder="https://github.com/org/repo" />
+                <Input
+                  id="url"
+                  value={newRepo.url}
+                  onChange={(e) =>
+                    setNewRepo((prev) => ({ ...prev, url: e.target.value }))
+                  }
+                  placeholder="https://github.com/org/repo"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="branch">Branch</Label>
-                <Select>
+                <Select
+                  onValueChange={(value) =>
+                    setNewRepo((prev) => ({ ...prev, branch: value }))
+                  }
+                  value={newRepo.branch}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select branch" />
                   </SelectTrigger>
@@ -105,7 +148,7 @@ export default function RepositoriesPage() {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button onClick={() => setIsAddingRepo(false)}>Add Repository</Button>
+              <Button onClick={handleAddRepository}>Add Repository</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -137,9 +180,7 @@ export default function RepositoriesPage() {
                   </div>
                 </div>
                 <div className="pt-2">
-                  <p className="text-sm">
-                    {repo.devices} connected devices
-                  </p>
+                  <p className="text-sm">{repo.devices} connected devices</p>
                   <p className="text-xs text-muted-foreground">
                     Last updated: {repo.lastUpdate}
                   </p>
