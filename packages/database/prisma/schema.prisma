@@ -21,6 +21,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   devices       Device[]
+  repositories  Repository[]
 
   @@unique([email])
   @@map("user")
@@ -79,10 +80,42 @@ model Device {
   updatedAt   DateTime  @updatedAt
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  repositoryId String?
+  repository  Repository? @relation(fields: [repositoryId], references: [id])
   @@map("device")
 }
 
 enum DeviceModel {
   ESP32
+}
+
+
+
+model Repository {
+  id String    @id @default(cuid())
+  name String
+  url String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  devices Device[]
+  firmwareBuilds FirmwareBuilds[]
+}
+
+model FirmwareBuilds  {
+  id String @id @default(cuid())
+  version Float
+  url String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  repositoryId String
+  repository Repository? @relation(fields: [repositoryId], references: [id])
+  status BuildStatus @default(BUILDING)
+}
+
+enum BuildStatus {
+  BUILDING
+  SUCCESS
+  FAILED
 }
