@@ -1,5 +1,6 @@
 import express from 'express';
 import deviceRouter from "./deviceRoutes"
+import repositoryRouter from "./repositoryRoutes"
 import { authMiddleware } from '../middleware/auth-middleware';
 
 
@@ -10,5 +11,6 @@ router.get('/hello', (req: express.Request, res: express.Response) => {
 });
 
 router.use('/devices', authMiddleware, deviceRouter)
+router.use('/repositories', authMiddleware, repositoryRouter)
 
 export { router };

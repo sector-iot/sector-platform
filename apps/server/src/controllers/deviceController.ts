@@ -21,13 +21,15 @@ const deviceSchema = {
 export const deviceController = {
   async createDevice(req: Request, res: Response) {
     const user = req.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
     try {
       const data = deviceSchema.create.parse(req.body);
 
       const device = await prisma.device.create({
         data: {
           ...data,
-          userId: user?.id as string,
+          userId: user.id,
         }
       });
       res.status(201).json(device);
@@ -38,14 +40,16 @@ export const deviceController = {
   },
 
   async getAllDevices(req: Request, res: Response) {
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
     try {
       const devices = await prisma.device.findMany({
         include: { user: true },
         where: {
-          userId: req.user?.id as string
+          userId: user.id
         }
       });
-      console.log(devices)
       res.json(devices);
     } catch (error) {
       console.error('Error fetching devices:', error);
@@ -54,6 +58,9 @@ export const deviceController = {
   },
 
   async getDeviceById(req: Request, res: Response) {
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
     try {
       const { id } = deviceSchema.id.parse(req.params);
       const device = await prisma.device.findUnique({
@@ -62,6 +69,8 @@ export const deviceController = {
       });
 
       if (!device) return res.status(404).json({ error: 'Device not found' });
+      if (device.userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
+
       res.json(device);
     } catch (error) {
       console.error('Error fetching device:', error);
@@ -70,10 +79,17 @@ export const deviceController = {
   },
 
   async updateDevice(req: Request, res: Response) {
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
     try {
       const { id } = deviceSchema.id.parse(req.params);
-      const data = deviceSchema.update.parse(req.body);
+      
+      const existingDevice = await prisma.device.findUnique({ where: { id } });
+      if (!existingDevice) return res.status(404).json({ error: 'Device not found' });
+      if (existingDevice.userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
 
+      const data = deviceSchema.update.parse(req.body);
       const device = await prisma.device.update({
         where: { id },
         data
@@ -86,8 +102,16 @@ export const deviceController = {
   },
 
   async deleteDevice(req: Request, res: Response) {
+    const user = req.user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
     try {
       const { id } = deviceSchema.id.parse(req.params);
+      
+      const existingDevice = await prisma.device.findUnique({ where: { id } });
+      if (!existingDevice) return res.status(404).json({ error: 'Device not found' });
+      if (existingDevice.userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
+
       await prisma.device.delete({ where: { id } });
       res.status(204).send();
     } catch (error) {
