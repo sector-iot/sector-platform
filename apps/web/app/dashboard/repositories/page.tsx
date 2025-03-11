@@ -1,6 +1,6 @@
 "use client";
 
-
+import { Device } from "@repo/database";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,13 +30,15 @@ import { apiClient } from "@/lib/api-client";
 import { Repository } from "@repo/database";
 import { GitBranch, GitCommit, GitPullRequest } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import DeviceLinker from "@/components/dashboard/device-linker";
 
 
 
 
 export default function RepositoriesPage() {
+  const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isOpen, setIsOpen] = useState(false); // Controls dialog visibility
   const [isAddingRepo, setIsAddingRepo] = useState(false);
   const [isAddedRepo, setIsAddedRepo] = useState(false);
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -46,30 +48,55 @@ export default function RepositoriesPage() {
     branch: "main",
   });
 
-    useEffect(() => {
-      getRepositories();
-    }, [isAddedRepo]);
-  
-    const getRepositories = async () => {
-      setLoading(true);
-      const repositoryResponse = await apiClient.getRepositories();
-      if (repositoryResponse.error) {
-        setLoading(false);
-        return;
-      } else if (repositoryResponse.data) {
-        // Sort devices alphabetically by name, and by createdAt if names are the same
-        // const sortedDevices = [...devicesResponse.data].sort((a, b) => {
-        //   const nameComparison = a.name.localeCompare(b.name);
-        //   if (nameComparison !== 0) {
-        //     return nameComparison; // Primary sorting by name
-        //   }
-        //   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
-        // });
-        setRepositories(repositoryResponse.data);
-      }
-      setLoading(false);
-    };
+  useEffect(() => {
+    getRepositories();
+  }, [isAddedRepo]);
 
+
+  useEffect(() => {
+    if (isOpen) {
+      getDevices(); // Fetch devices when the modal opens
+    }
+  }, [isOpen]);
+
+
+
+  const getRepositories = async () => {
+    setLoading(true);
+    const repositoryResponse = await apiClient.getRepositories();
+    if (repositoryResponse.error) {
+      setLoading(false);
+      return;
+    } else if (repositoryResponse.data) {
+      // Sort devices alphabetically by name, and by createdAt if names are the same
+      // const sortedDevices = [...devicesResponse.data].sort((a, b) => {
+      //   const nameComparison = a.name.localeCompare(b.name);
+      //   if (nameComparison !== 0) {
+      //     return nameComparison; // Primary sorting by name
+      //   }
+      //   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
+      // });
+      setRepositories(repositoryResponse.data);
+    }
+    setLoading(false);
+  };
+
+
+  const linkDeviceToRepo = async (deviceId: string) => {
+    try {
+      const response = await apiClient.linkDeviceToRepository(deviceId, deviceId);
+      if (!response.error) {
+        alert("Device linked successfully!");
+        setIsOpen(false); // Close the dialog after linking
+      } else {
+        alert("Failed to link device");
+      }
+    } catch (error) {
+      alert("An error occurred while linking the device");
+    }
+  };
+
+  
   const handleAddRepository = async () => {
     if (!newRepo.name || !newRepo.url) return; // Basic validation
 
@@ -80,6 +107,27 @@ export default function RepositoriesPage() {
     setIsAddedRepo(true);
     setIsAddingRepo(false);
     setNewRepo({ name: "", url: "", branch: "main" }); // Reset the form
+  };
+
+
+  const getDevices = async () => {
+    setLoading(true);
+    const devicesResponse = await apiClient.getDevices();
+    if (devicesResponse.error) {
+      setLoading(false);
+      return;
+    } else if (devicesResponse.data) {
+      // Sort devices alphabetically by name, and by createdAt if names are the same
+      const sortedDevices = [...devicesResponse.data].sort((a, b) => {
+        const nameComparison = a.name.localeCompare(b.name);
+        if (nameComparison !== 0) {
+          return nameComparison; // Primary sorting by name
+        }
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
+      });
+      setDevices(sortedDevices);
+    }
+    setLoading(false);
   };
 
   return (
@@ -147,15 +195,51 @@ export default function RepositoriesPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-      
+
 
                 <div className="flex space-x-2">
-                  <Button variant="outline" className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => window.open(repo.url, '_blank')}
+                  >
                     View Details
                   </Button>
-                  <Button variant="outline" className="flex-1">
-                    Configure
-                  </Button>
+                  <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        Configure
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Link Device to Repository</DialogTitle>
+                        <DialogDescription>Select a device to link to this repository.</DialogDescription>
+                      </DialogHeader>
+
+                      {loading ? (
+                        <p>Loading devices...</p>
+                      ) : (
+                        <Select onValueChange={(deviceId) => linkDeviceToRepo(deviceId)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a device" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {devices.length > 0 ? (
+                              devices.map((device) => (
+                                <SelectItem key={device.id} value={device.id}>
+                                  {device.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <p>No devices available</p>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </CardContent>
