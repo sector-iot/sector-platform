@@ -1,4 +1,4 @@
-import { Prisma, Device } from "@repo/database";
+import { Prisma, Device, Repository } from "@repo/database";
 
 type ApiResponse<T> = {
   data?: T;
@@ -91,6 +91,52 @@ export class ApiClient {
 
   async deleteDevice(id: string) {
     return this.request<void>(`/devices/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Repository endpoints
+  async createRepository(data: Prisma.RepositoryCreateWithoutUserInput) {
+    return this.request<Repository>('/repositories', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async getRepositories() {
+    return this.request<Repository[]>('/repositories', {
+      method: 'GET',
+    });
+  }
+
+  async getRepository(id: string) {
+    return this.request<Repository>(`/repositories/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async updateRepository(id: string, data: Prisma.RepositoryUpdateInput) {
+    return this.request<Repository>(`/repositories/${id}`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  async deleteRepository(id: string) {
+    return this.request<void>(`/repositories/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async linkDeviceToRepository(deviceId: string, repositoryId: string) {
+    return this.request<Device>('/repositories/link-device', {
+      method: 'POST',
+      body: { deviceId, repositoryId },
+    });
+  }
+
+  async unlinkDeviceFromRepository(deviceId: string) {
+    return this.request<Device>(`/repositories/unlink-device/${deviceId}`, {
       method: 'DELETE',
     });
   }
