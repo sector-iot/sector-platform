@@ -14,5 +14,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  minio:
+    image: minio/minio
+    container_name: sector-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: MUdIIbO215d9SjlERNZj
+      MINIO_ROOT_PASSWORD: a5NfdVIj0NWyJmbd86IJqhBkM50q8Wv4zaGMzWWv
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # MinIO API endpoint
+      - "9001:9001"   # MinIO Console endpoint
+    command: |
+      server /data --console-address ":9001"
+      && sleep 10
+      && mc alias set myminio http://localhost:9000 MUdIIbO215d9SjlERNZj a5NfdVIj0NWyJmbd86IJqhBkM50q8Wv4zaGMzWWv
+      && mc mb myminio/firmware-bucket
+
 volumes:
   postgres_data:
+  minio_data:
+  
