@@ -1,5 +1,6 @@
 "use client";
 
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,62 +26,58 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiClient } from "@/lib/api-client";
+import { Repository } from "@repo/database";
 import { GitBranch, GitCommit, GitPullRequest } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const initialRepositories = [
-  {
-    id: "repo-001",
-    name: "Temperature Sensor Firmware",
-    url: "https://github.com/org/temp-sensor-firmware",
-    branch: "main",
-    lastCommit: "feat: Update sensor calibration",
-    devices: 5,
-    lastUpdate: "2024-03-20 14:30",
-  },
-  {
-    id: "repo-002",
-    name: "Humidity Monitor Firmware",
-    url: "https://github.com/org/humidity-monitor-fw",
-    branch: "develop",
-    lastCommit: "fix: Memory leak in sensor reading",
-    devices: 3,
-    lastUpdate: "2024-03-19 09:15",
-  },
-  {
-    id: "repo-003",
-    name: "Motion Detector Code",
-    url: "https://github.com/org/motion-detect-code",
-    branch: "main",
-    lastCommit: "feat: Add new detection algorithm",
-    devices: 4,
-    lastUpdate: "2024-03-18 23:45",
-  },
-];
+
+
+
 
 export default function RepositoriesPage() {
+  const [loading, setLoading] = useState<boolean>(true);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
-  const [repositories, setRepositories] = useState(initialRepositories);
+  const [isAddedRepo, setIsAddedRepo] = useState(false);
+  const [repositories, setRepositories] = useState<Repository[]>([]);
   const [newRepo, setNewRepo] = useState({
     name: "",
     url: "",
     branch: "main",
   });
 
-  const handleAddRepository = () => {
-    if (!newRepo.name || !newRepo.url) return; // Basic validation
-
-    const newRepository = {
-      id: `repo-${repositories.length + 1}`,
-      name: newRepo.name,
-      url: newRepo.url,
-      branch: newRepo.branch,
-      lastCommit: "Initial commit",
-      devices: 0, // Assume no devices connected yet
-      lastUpdate: new Date().toISOString().slice(0, 19).replace("T", " "),
+    useEffect(() => {
+      getRepositories();
+    }, [isAddedRepo]);
+  
+    const getRepositories = async () => {
+      setLoading(true);
+      const repositoryResponse = await apiClient.getRepositories();
+      if (repositoryResponse.error) {
+        setLoading(false);
+        return;
+      } else if (repositoryResponse.data) {
+        // Sort devices alphabetically by name, and by createdAt if names are the same
+        // const sortedDevices = [...devicesResponse.data].sort((a, b) => {
+        //   const nameComparison = a.name.localeCompare(b.name);
+        //   if (nameComparison !== 0) {
+        //     return nameComparison; // Primary sorting by name
+        //   }
+        //   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
+        // });
+        setRepositories(repositoryResponse.data);
+      }
+      setLoading(false);
     };
 
-    setRepositories((prev) => [...prev, newRepository]);
+  const handleAddRepository = async () => {
+    if (!newRepo.name || !newRepo.url) return; // Basic validation
+
+    const response = await apiClient.createRepository({
+      name: newRepo.name, url: newRepo.url
+    })
+
+    setIsAddedRepo(true);
     setIsAddingRepo(false);
     setNewRepo({ name: "", url: "", branch: "main" }); // Reset the form
   };
@@ -128,24 +125,7 @@ export default function RepositoriesPage() {
                   placeholder="https://github.com/org/repo"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="branch">Branch</Label>
-                <Select
-                  onValueChange={(value) =>
-                    setNewRepo((prev) => ({ ...prev, branch: value }))
-                  }
-                  value={newRepo.branch}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="main">main</SelectItem>
-                    <SelectItem value="develop">develop</SelectItem>
-                    <SelectItem value="staging">staging</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
             </div>
             <div className="flex justify-end">
               <Button onClick={handleAddRepository}>Add Repository</Button>
@@ -167,24 +147,8 @@ export default function RepositoriesPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <GitCommit className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm truncate">{repo.lastCommit}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <GitPullRequest className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Branch: {repo.branch}</span>
-                  </div>
-                </div>
-                <div className="pt-2">
-                  <p className="text-sm">{repo.devices} connected devices</p>
-                  <p className="text-xs text-muted-foreground">
-                    Last updated: {repo.lastUpdate}
-                  </p>
-                </div>
+      
+
                 <div className="flex space-x-2">
                   <Button variant="outline" className="flex-1">
                     View Details
