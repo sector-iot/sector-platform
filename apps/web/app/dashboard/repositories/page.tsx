@@ -1,5 +1,6 @@
 "use client";
 
+import { Device } from "@repo/database";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,41 +26,109 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiClient } from "@/lib/api-client";
+import { Repository } from "@repo/database";
 import { GitBranch, GitCommit, GitPullRequest } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import DeviceLinker from "@/components/dashboard/device-linker";
 
-const repositories = [
-  {
-    id: "repo-001",
-    name: "Temperature Sensor Firmware",
-    url: "https://github.com/org/temp-sensor-firmware",
-    branch: "main",
-    lastCommit: "feat: Update sensor calibration",
-    devices: 5,
-    lastUpdate: "2024-03-20 14:30",
-  },
-  {
-    id: "repo-002",
-    name: "Humidity Monitor Firmware",
-    url: "https://github.com/org/humidity-monitor-fw",
-    branch: "develop",
-    lastCommit: "fix: Memory leak in sensor reading",
-    devices: 3,
-    lastUpdate: "2024-03-19 09:15",
-  },
-  {
-    id: "repo-003",
-    name: "Motion Detector Code",
-    url: "https://github.com/org/motion-detect-code",
-    branch: "main",
-    lastCommit: "feat: Add new detection algorithm",
-    devices: 4,
-    lastUpdate: "2024-03-18 23:45",
-  },
-];
+
+
 
 export default function RepositoriesPage() {
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isOpen, setIsOpen] = useState(false); // Controls dialog visibility
   const [isAddingRepo, setIsAddingRepo] = useState(false);
+  const [isAddedRepo, setIsAddedRepo] = useState(false);
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [newRepo, setNewRepo] = useState({
+    name: "",
+    url: "",
+    branch: "main",
+  });
+
+  useEffect(() => {
+    getRepositories();
+  }, [isAddedRepo]);
+
+
+  useEffect(() => {
+    if (isOpen) {
+      getDevices(); // Fetch devices when the modal opens
+    }
+  }, [isOpen]);
+
+
+
+  const getRepositories = async () => {
+    setLoading(true);
+    const repositoryResponse = await apiClient.getRepositories();
+    if (repositoryResponse.error) {
+      setLoading(false);
+      return;
+    } else if (repositoryResponse.data) {
+      // Sort devices alphabetically by name, and by createdAt if names are the same
+      // const sortedDevices = [...devicesResponse.data].sort((a, b) => {
+      //   const nameComparison = a.name.localeCompare(b.name);
+      //   if (nameComparison !== 0) {
+      //     return nameComparison; // Primary sorting by name
+      //   }
+      //   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
+      // });
+      setRepositories(repositoryResponse.data);
+    }
+    setLoading(false);
+  };
+
+
+  const linkDeviceToRepo = async (deviceId: string) => {
+    try {
+      const response = await apiClient.linkDeviceToRepository(deviceId, deviceId);
+      if (!response.error) {
+        alert("Device linked successfully!");
+        setIsOpen(false); // Close the dialog after linking
+      } else {
+        alert("Failed to link device");
+      }
+    } catch (error) {
+      alert("An error occurred while linking the device");
+    }
+  };
+
+  
+  const handleAddRepository = async () => {
+    if (!newRepo.name || !newRepo.url) return; // Basic validation
+
+    const response = await apiClient.createRepository({
+      name: newRepo.name, url: newRepo.url
+    })
+
+    setIsAddedRepo(true);
+    setIsAddingRepo(false);
+    setNewRepo({ name: "", url: "", branch: "main" }); // Reset the form
+  };
+
+
+  const getDevices = async () => {
+    setLoading(true);
+    const devicesResponse = await apiClient.getDevices();
+    if (devicesResponse.error) {
+      setLoading(false);
+      return;
+    } else if (devicesResponse.data) {
+      // Sort devices alphabetically by name, and by createdAt if names are the same
+      const sortedDevices = [...devicesResponse.data].sort((a, b) => {
+        const nameComparison = a.name.localeCompare(b.name);
+        if (nameComparison !== 0) {
+          return nameComparison; // Primary sorting by name
+        }
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
+      });
+      setDevices(sortedDevices);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="p-8">
@@ -84,28 +153,30 @@ export default function RepositoriesPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Repository Name</Label>
-                <Input id="name" placeholder="Enter repository name" />
+                <Input
+                  id="name"
+                  value={newRepo.name}
+                  onChange={(e) =>
+                    setNewRepo((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="Enter repository name"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="url">Repository URL</Label>
-                <Input id="url" placeholder="https://github.com/org/repo" />
+                <Input
+                  id="url"
+                  value={newRepo.url}
+                  onChange={(e) =>
+                    setNewRepo((prev) => ({ ...prev, url: e.target.value }))
+                  }
+                  placeholder="https://github.com/org/repo"
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="branch">Branch</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="main">main</SelectItem>
-                    <SelectItem value="develop">develop</SelectItem>
-                    <SelectItem value="staging">staging</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
             </div>
             <div className="flex justify-end">
-              <Button onClick={() => setIsAddingRepo(false)}>Add Repository</Button>
+              <Button onClick={handleAddRepository}>Add Repository</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -124,33 +195,51 @@ export default function RepositoriesPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <GitCommit className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm truncate">{repo.lastCommit}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <GitPullRequest className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Branch: {repo.branch}</span>
-                  </div>
-                </div>
-                <div className="pt-2">
-                  <p className="text-sm">
-                    {repo.devices} connected devices
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Last updated: {repo.lastUpdate}
-                  </p>
-                </div>
+
+
                 <div className="flex space-x-2">
-                  <Button variant="outline" className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => window.open(repo.url, '_blank')}
+                  >
                     View Details
                   </Button>
-                  <Button variant="outline" className="flex-1">
-                    Configure
-                  </Button>
+                  <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex-1">
+                        Configure
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Link Device to Repository</DialogTitle>
+                        <DialogDescription>Select a device to link to this repository.</DialogDescription>
+                      </DialogHeader>
+
+                      {loading ? (
+                        <p>Loading devices...</p>
+                      ) : (
+                        <Select onValueChange={(deviceId) => linkDeviceToRepo(deviceId)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a device" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {devices.length > 0 ? (
+                              devices.map((device) => (
+                                <SelectItem key={device.id} value={device.id}>
+                                  {device.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <p>No devices available</p>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </CardContent>

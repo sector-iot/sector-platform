@@ -23,9 +23,51 @@ app.use(express.json());
 
 // Routes
 app.use('/api', apiRouter);
-// Root route
+
+// Root route to provide API rundown
 app.get('/', (req: express.Request, res: express.Response) => {
-  res.json({ message: 'Welcome to the API!' });
+  res.json({
+    message: 'Welcome to the API!',
+    description: 'This API allows you to manage devices and user authentication.',
+    availableEndpoints: [
+      {
+        method: 'GET',
+        endpoint: '/api/devices',
+        description: 'Fetch all devices',
+      },
+      {
+        method: 'GET',
+        endpoint: '/api/devices/:id',
+        description: 'Fetch a single device by ID',
+      },
+      {
+        method: 'POST',
+        endpoint: '/api/devices',
+        description: 'Create a new device',
+      },
+      {
+        method: 'PUT',
+        endpoint: '/api/devices/:id',
+        description: 'Update an existing device',
+      },
+      {
+        method: 'DELETE',
+        endpoint: '/api/devices/:id',
+        description: 'Delete a device by ID',
+      },
+      {
+        method: 'POST',
+        endpoint: '/api/auth/login',
+        description: 'User login endpoint',
+      },
+      {
+        method: 'POST',
+        endpoint: '/api/auth/register',
+        description: 'User registration endpoint',
+      }
+    ],
+    note: 'For more detailed information, please refer to the API documentation or the README file.',
+  });
 });
 
 // Error handling middleware
