@@ -1,4 +1,4 @@
-import { Prisma, Device, Repository } from "@repo/database";
+import { Prisma, Device, Repository, FirmwareBuilds } from "@repo/database";
 
 type ApiResponse<T> = {
   data?: T;
@@ -137,6 +137,39 @@ export class ApiClient {
 
   async unlinkDeviceFromRepository(deviceId: string) {
     return this.request<Device>(`/repositories/unlink-device/${deviceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Firmware Build endpoints
+  async createFirmwareBuild(data: { version: number; url?: string; repositoryId: string }) {
+    return this.request<FirmwareBuilds>('/firmware', {
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  async getFirmwareBuilds() {
+    return this.request<FirmwareBuilds[]>('/firmware', {
+      method: 'GET',
+    });
+  }
+
+  async getFirmwareBuild(id: string) {
+    return this.request<FirmwareBuilds>(`/firmware/${id}`, {
+      method: 'GET',
+    });
+  }
+
+  async updateFirmwareBuild(id: string, data: { version?: number; url?: string; status?: 'BUILDING' | 'SUCCESS' | 'FAILED' }) {
+    return this.request<FirmwareBuilds>(`/firmware/${id}`, {
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  async deleteFirmwareBuild(id: string) {
+    return this.request<void>(`/firmware/${id}`, {
       method: 'DELETE',
     });
   }
