@@ -3,6 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": [
+        "^generate",
         "^build"
       ],
       "inputs": [
