@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Boxes, Cpu, GitBranch, Home, Users } from "lucide-react";
+import { Boxes, Cpu, GitBranch, Home, Users, Key } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -25,6 +25,11 @@ const routes = [
     label: "Git Repositories",
     icon: GitBranch,
     href: "/dashboard/repositories",
+  },
+  {
+    label: "API Keys",
+    icon: Key,
+    href: "/dashboard/api-keys",
   },
 ];
 

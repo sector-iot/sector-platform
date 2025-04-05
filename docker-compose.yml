@@ -13,6 +13,34 @@ services:
       POSTGRES_DB: sector
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: sector-server
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/sector
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: sector-web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://server:3000
+    depends_on:
+      - server
 
 volumes:
   postgres_data:
