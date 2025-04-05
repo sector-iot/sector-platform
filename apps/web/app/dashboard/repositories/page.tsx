@@ -28,17 +28,15 @@ import {
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
 import { Repository } from "@repo/database";
-import { GitBranch, GitCommit, GitPullRequest } from "lucide-react";
+import { GitBranch, GitCommit, GitPullRequest, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import DeviceLinker from "@/components/dashboard/device-linker";
-
-
-
+import { toast } from "sonner";
 
 export default function RepositoriesPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isOpen, setIsOpen] = useState(false); // Controls dialog visibility
+  const [isOpen, setIsOpen] = useState(false);
   const [isAddingRepo, setIsAddingRepo] = useState(false);
   const [isAddedRepo, setIsAddedRepo] = useState(false);
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -52,14 +50,11 @@ export default function RepositoriesPage() {
     getRepositories();
   }, [isAddedRepo]);
 
-
   useEffect(() => {
     if (isOpen) {
-      getDevices(); // Fetch devices when the modal opens
+      getDevices();
     }
   }, [isOpen]);
-
-
 
   const getRepositories = async () => {
     setLoading(true);
@@ -68,47 +63,69 @@ export default function RepositoriesPage() {
       setLoading(false);
       return;
     } else if (repositoryResponse.data) {
-      // Sort devices alphabetically by name, and by createdAt if names are the same
-      // const sortedDevices = [...devicesResponse.data].sort((a, b) => {
-      //   const nameComparison = a.name.localeCompare(b.name);
-      //   if (nameComparison !== 0) {
-      //     return nameComparison; // Primary sorting by name
-      //   }
-      //   return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
-      // });
       setRepositories(repositoryResponse.data);
     }
     setLoading(false);
   };
 
-
   const linkDeviceToRepo = async (deviceId: string) => {
     try {
       const response = await apiClient.linkDeviceToRepository(deviceId, deviceId);
       if (!response.error) {
-        alert("Device linked successfully!");
-        setIsOpen(false); // Close the dialog after linking
+        toast.success("Device linked successfully!");
+        setIsOpen(false);
       } else {
-        alert("Failed to link device");
+        toast.error("Failed to link device");
       }
     } catch (error) {
-      alert("An error occurred while linking the device");
+      toast.error("An error occurred while linking the device");
     }
   };
 
-  
   const handleAddRepository = async () => {
-    if (!newRepo.name || !newRepo.url) return; // Basic validation
+    if (!newRepo.name || !newRepo.url) {
+      toast.error("Please fill in all fields");
+      return;
+    }
 
-    const response = await apiClient.createRepository({
-      name: newRepo.name, url: newRepo.url
-    })
+    try {
+      const response = await apiClient.createRepository({
+        name: newRepo.name,
+        url: newRepo.url
+      });
 
-    setIsAddedRepo(true);
-    setIsAddingRepo(false);
-    setNewRepo({ name: "", url: "", branch: "main" }); // Reset the form
+      if (response.error) {
+        toast.error("Failed to create repository");
+        return;
+      }
+
+      toast.success("Repository created successfully");
+      setIsAddedRepo(true);
+      setIsAddingRepo(false);
+      setNewRepo({ name: "", url: "", branch: "main" });
+    } catch (error) {
+      toast.error("An error occurred while creating the repository");
+    }
   };
 
+  const handleDeleteRepository = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this repository? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await apiClient.deleteRepository(id);
+      if (response.error) {
+        toast.error("Failed to delete repository");
+        return;
+      }
+
+      toast.success("Repository deleted successfully");
+      getRepositories();
+    } catch (error) {
+      toast.error("An error occurred while deleting the repository");
+    }
+  };
 
   const getDevices = async () => {
     setLoading(true);
@@ -117,13 +134,12 @@ export default function RepositoriesPage() {
       setLoading(false);
       return;
     } else if (devicesResponse.data) {
-      // Sort devices alphabetically by name, and by createdAt if names are the same
       const sortedDevices = [...devicesResponse.data].sort((a, b) => {
         const nameComparison = a.name.localeCompare(b.name);
         if (nameComparison !== 0) {
-          return nameComparison; // Primary sorting by name
+          return nameComparison;
         }
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); // Secondary sorting by createdAt
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       });
       setDevices(sortedDevices);
     }
@@ -173,7 +189,6 @@ export default function RepositoriesPage() {
                   placeholder="https://github.com/org/repo"
                 />
               </div>
-
             </div>
             <div className="flex justify-end">
               <Button onClick={handleAddRepository}>Add Repository</Button>
@@ -183,7 +198,17 @@ export default function RepositoriesPage() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {repositories.map((repo) => (
-          <Card key={repo.id}>
+          <Card key={repo.id} className="group relative">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteRepository(repo.id)}
+                className="h-8 w-8 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -195,8 +220,6 @@ export default function RepositoriesPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-
-
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"
@@ -237,7 +260,6 @@ export default function RepositoriesPage() {
                           </SelectContent>
                         </Select>
                       )}
-
                     </DialogContent>
                   </Dialog>
                 </div>

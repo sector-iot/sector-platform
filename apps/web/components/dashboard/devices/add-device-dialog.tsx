@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,7 +34,12 @@ import { DeviceModel } from "@repo/database";
 
 const deviceSchema = z.object({
     name: z.string().min(2, "Device name must be at least 2 characters"),
-    model: z.nativeEnum(DeviceModel, { required_error: "Please select a device model" })
+    model: z.nativeEnum(DeviceModel, { required_error: "Please select a device model" }),
+    repository: z.object({
+        connect: z.object({
+            id: z.string()
+        })
+    }).optional()
 })
 
 type DeviceFormData = z.infer<typeof deviceSchema>
@@ -46,11 +51,25 @@ export default function AddDeviceDialog({
 }) {
     const [isAddingDevice, setIsAddingDevice] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [repositories, setRepositories] = useState<{ id: string; name: string }[]>([]);
     const router = useRouter();
 
     const form = useForm<DeviceFormData>({
         resolver: zodResolver(deviceSchema)
     })
+
+    useEffect(() => {
+        const fetchRepositories = async () => {
+            const response = await apiClient.getRepositories();
+            if (response.data) {
+                setRepositories(response.data);
+            }
+        };
+
+        if (isAddingDevice) {
+            fetchRepositories();
+        }
+    }, [isAddingDevice]);
 
     const onSubmit = async (data: DeviceFormData) => {
         setLoading(true)
@@ -58,10 +77,12 @@ export default function AddDeviceDialog({
             const response = await apiClient.createDevice({
                 name: data.name,
                 model: data.model,
+                repository: data.repository
             })
             if (!response.error) {
                 setIsAddingDevice(false)
                 setNewDeviceAdded(true)
+                form.reset()
             } else {
                 alert("Failed to create device")
             }
@@ -113,6 +134,37 @@ export default function AddDeviceDialog({
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="ESP32">ESP32</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="repository"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Linked Repository</FormLabel>
+                                    <Select onValueChange={(value) => {
+                                        if (value === "none") {
+                                            field.onChange(undefined);
+                                        } else {
+                                            field.onChange({ connect: { id: value } });
+                                        }
+                                    }} defaultValue={field.value?.connect?.id}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select repository" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            {repositories.map((repo) => (
+                                                <SelectItem key={repo.id} value={repo.id}>
+                                                    {repo.name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

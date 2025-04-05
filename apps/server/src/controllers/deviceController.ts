@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from "@repo/database";
+import { prisma, Prisma } from "@repo/database";
 import { DeviceModel } from '@repo/database';
 import { z } from 'zod';
 
@@ -8,10 +8,20 @@ const deviceSchema = {
   create: z.object({
     name: z.string().min(1, "Name is required"),
     model: z.nativeEnum(DeviceModel).default(DeviceModel.ESP32),
+    repository: z.object({
+      connect: z.object({
+        id: z.string()
+      })
+    }).optional()
   }),
   update: z.object({
     name: z.string().optional(),
     model: z.nativeEnum(DeviceModel).optional(),
+    repository: z.object({
+      connect: z.object({
+        id: z.string()
+      })
+    }).optional()
   }),
   id: z.object({
     id: z.string().min(1, "Id is required"),
@@ -26,11 +36,26 @@ export const deviceController = {
     try {
       const data = deviceSchema.create.parse(req.body);
 
+      // If repository is provided, verify it belongs to the user
+      if (data.repository?.connect?.id) {
+        const repository = await prisma.repository.findUnique({
+          where: {
+            id: data.repository.connect.id,
+            userId: user.id
+          }
+        });
+        if (!repository) {
+          return res.status(404).json({ error: 'Repository not found' });
+        }
+      }
+
       const device = await prisma.device.create({
         data: {
-          ...data,
+          name: data.name,
+          model: data.model,
           userId: user.id,
-        }
+          repository: data.repository
+        } as Prisma.DeviceUncheckedCreateInput
       });
       res.status(201).json(device);
     } catch (error) {
@@ -45,7 +70,10 @@ export const deviceController = {
 
     try {
       const devices = await prisma.device.findMany({
-        include: { user: true },
+        include: { 
+          user: true,
+          repository: true 
+        },
         where: {
           userId: user.id
         }
@@ -65,7 +93,10 @@ export const deviceController = {
       const { id } = deviceSchema.id.parse(req.params);
       const device = await prisma.device.findUnique({
         where: { id },
-        include: { user: true }
+        include: { 
+          user: true,
+          repository: true 
+        }
       });
 
       if (!device) return res.status(404).json({ error: 'Device not found' });

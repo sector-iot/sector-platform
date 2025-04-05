@@ -1,5 +1,9 @@
 import { Prisma, Device, Repository, FirmwareBuilds } from "@repo/database";
 
+type DeviceWithRepository = Device & {
+  repository: Repository | null;
+};
+
 type ApiResponse<T> = {
   data?: T;
   error?: {
@@ -71,13 +75,13 @@ export class ApiClient {
   }
 
   async getDevices() {
-    return this.request<Device[]>('/devices', {
+    return this.request<DeviceWithRepository[]>('/devices', {
       method: 'GET',
     });
   }
 
   async getDevice(id: string) {
-    return this.request<Device>(`/devices/${id}`, {
+    return this.request<DeviceWithRepository>(`/devices/${id}`, {
       method: 'GET',
     });
   }
