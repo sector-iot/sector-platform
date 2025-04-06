@@ -22,7 +22,7 @@ export class ApiClient {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
 
-  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL as string) {
+  constructor(baseUrl: string = `${process.env.NEXT_PUBLIC_API_URL as string}/api`) {
     this.baseUrl = baseUrl;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
