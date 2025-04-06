@@ -22,7 +22,7 @@ export class ApiClient {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
 
-  constructor(baseUrl: string = 'http://localhost:5000/api') {
+  constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL as string) {
     this.baseUrl = baseUrl;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
@@ -180,4 +180,4 @@ export class ApiClient {
 }
 
 // Create a singleton instance
-export const apiClient = new ApiClient("http://localhost:5000/api");
+export const apiClient = new ApiClient();
