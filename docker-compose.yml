@@ -5,14 +5,16 @@ services:
     image: postgres:16
     container_name: sector-postgres
     restart: always
-    ports:
-      - "5432:5432"
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: sector
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sector-network
     
   server:
     build:
@@ -20,13 +22,15 @@ services:
       dockerfile: apps/server/Dockerfile
     container_name: sector-server
     restart: always
-    ports:
-      - "5000:5000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/sector
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NODE_ENV=production
     depends_on:
       - postgres
+    networks:
+      - sector-network
 
   web:
     build:
@@ -34,13 +38,18 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: sector-web
     restart: always
-    ports:
-      - "3000:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://server:3000
     depends_on:
       - server
+    networks:
+      - sector-network
+
+networks:
+  sector-network:
+    driver: bridge
 
 volumes:
   postgres_data:
