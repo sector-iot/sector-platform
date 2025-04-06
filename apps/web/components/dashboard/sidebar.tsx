@@ -37,7 +37,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-[240px] flex-col border-r px-3 py-4">
+    <div className="flex h-full w-[240px] flex-col border-r border-sidebar-border bg-primary px-3 py-4 shadow-lg">
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <div className="space-y-1">
@@ -46,8 +46,8 @@ export function Sidebar() {
                 key={route.href}
                 href={route.href}
                 className={cn(
-                  "flex items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-                  pathname === route.href ? "bg-accent" : "transparent"
+                  "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-primary-foreground/10 hover:text-primary-foreground",
+                  pathname === route.href ? "bg-primary-foreground/20 text-primary-foreground" : "text-primary-foreground/80"
                 )}
               >
                 <route.icon className="mr-2 h-4 w-4" />
