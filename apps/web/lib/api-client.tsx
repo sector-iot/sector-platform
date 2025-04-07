@@ -193,6 +193,4 @@ export class ApiClient {
 }
 
 // Create a singleton instance
-export const apiClient = new ApiClient(
-  `${process.env.NEXT_PUBLIC_API_URL as string}/api`
-);
+export const apiClient = new ApiClient(`https://api.sector-iot.space/api`);
