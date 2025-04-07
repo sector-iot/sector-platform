@@ -71,7 +71,7 @@ export const firmwareBuildController = {
               id: data.repositoryId,
             }
           },
-          version: Number(nextVersion),
+          version: parseFloat(nextVersion),
           status: 'BUILDING',
         }
       });
