@@ -10,11 +10,17 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
-    emailAndPassword: {    
+    emailAndPassword: {
         enabled: true
-    }, 
+    },
     trustedOrigins: [process.env.FRONTEND_URL as string],
-    plugins: [ 
-        apiKey() 
-    ] 
+    plugins: [
+        apiKey()
+    ],
+    advanced: {
+        crossSubDomainCookies: {
+            enabled: true,
+            domain: ".sector-iot.space", // Domain with a leading period
+        },
+    }
 })
