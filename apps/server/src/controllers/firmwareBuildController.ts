@@ -41,7 +41,7 @@ export const firmwareBuildController = {
       // If version is provided in the request, use it (e.g. from GitHub Actions)
       if (data.version) {
         // Version format is already validated by schema
-        nextVersion= data.version;
+        nextVersion = data.version;
       } else {
         // Find the latest version for this repository
         const latestBuild = await prisma.firmwareBuilds.findFirst({
@@ -97,8 +97,6 @@ export const firmwareBuildController = {
   },
 
   async getFirmwareBuildById(req: Request, res: Response) {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
     try {
       const { id } = firmwareBuildSchema.id.parse(req.params);
@@ -113,10 +111,10 @@ export const firmwareBuildController = {
         return res.status(404).json({ error: 'Firmware build not found' });
       }
 
-      // Check if the firmware build's repository belongs to the user
-      if (firmwareBuild.repository?.userId !== user.id) {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
+      // // Check if the firmware build's repository belongs to the user
+      // if (firmwareBuild.repository?.userId !== user.id) {
+      //   return res.status(403).json({ error: 'Forbidden' });
+      // }
 
       res.json(firmwareBuild);
     } catch (error) {
