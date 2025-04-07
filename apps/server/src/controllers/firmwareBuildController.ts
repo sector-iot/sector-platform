@@ -62,7 +62,12 @@ export const firmwareBuildController = {
 
       const firmwareBuild = await prisma.firmwareBuilds.create({
         data: {
-          ...data,
+          url: data.url,
+          repository: {
+            connect: {
+              id: data.repositoryId,
+            }
+          },
           version: Number(nextVersion),
           status: 'BUILDING',
         }
