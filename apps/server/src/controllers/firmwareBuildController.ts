@@ -108,8 +108,10 @@ export const firmwareBuildController = {
 
     try {
       const { id } = firmwareBuildSchema.id.parse(req.params);
-      const firmwareBuild = await prisma.firmwareBuilds.findUnique({
-        where: { id },
+      const firmwareBuild = await prisma.firmwareBuilds.findFirst({
+        where: {
+          repositoryId: id
+        },
         include: {
           repository: true
         }
