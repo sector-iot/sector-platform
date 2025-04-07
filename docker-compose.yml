@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   server:
     build:
@@ -12,8 +10,6 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@sector-platform-sector-pg-olxov2:5432/sector
       - NODE_ENV=production
-    depends_on:
-      - postgres
     networks:
       - sector-network
 
