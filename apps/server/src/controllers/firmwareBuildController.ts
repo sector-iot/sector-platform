@@ -114,6 +114,9 @@ export const firmwareBuildController = {
         },
         include: {
           repository: true
+        },
+        orderBy: {
+          version: 'desc'
         }
       });
 
