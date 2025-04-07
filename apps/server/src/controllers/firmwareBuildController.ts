@@ -59,7 +59,10 @@ export const firmwareBuildController = {
           nextVersion = `${major}.${minor}.${patch + 1}`;
         }
       }
-
+      console.log('Next version:', nextVersion);
+      if (!nextVersion) {
+        nextVersion = '0.1.0';
+      }
       const firmwareBuild = await prisma.firmwareBuilds.create({
         data: {
           url: data.url,
