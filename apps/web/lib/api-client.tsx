@@ -1,4 +1,4 @@
-import { Prisma, Device, Repository, FirmwareBuilds } from "@repo/database";
+import { Prisma, Device, Repository, FirmwareBuilds } from '@repo/database';
 
 type DeviceWithRepository = Device & {
   repository: Repository | null;
@@ -22,7 +22,9 @@ export class ApiClient {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
 
-  constructor(baseUrl: string = `${process.env.NEXT_PUBLIC_API_URL as string}/api`) {
+  constructor(
+    baseUrl: string = `${process.env.NEXT_PUBLIC_API_URL as string}/api`
+  ) {
     this.baseUrl = baseUrl;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
@@ -146,7 +148,11 @@ export class ApiClient {
   }
 
   // Firmware Build endpoints
-  async createFirmwareBuild(data: { version: number; url?: string; repositoryId: string }) {
+  async createFirmwareBuild(data: {
+    version: number;
+    url?: string;
+    repositoryId: string;
+  }) {
     return this.request<FirmwareBuilds>('/firmware', {
       method: 'POST',
       body: data,
@@ -165,7 +171,14 @@ export class ApiClient {
     });
   }
 
-  async updateFirmwareBuild(id: string, data: { version?: number; url?: string; status?: 'BUILDING' | 'SUCCESS' | 'FAILED' }) {
+  async updateFirmwareBuild(
+    id: string,
+    data: {
+      version?: number;
+      url?: string;
+      status?: 'BUILDING' | 'SUCCESS' | 'FAILED';
+    }
+  ) {
     return this.request<FirmwareBuilds>(`/firmware/${id}`, {
       method: 'PUT',
       body: data,
@@ -180,4 +193,6 @@ export class ApiClient {
 }
 
 // Create a singleton instance
-export const apiClient = new ApiClient();
+export const apiClient = new ApiClient(
+  `${process.env.NEXT_PUBLIC_API_URL as string}/api`
+);
