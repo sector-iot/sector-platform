@@ -29,6 +29,7 @@
   },
   "name": "sector-platform",
   "dependencies": {
+    "@octokit/rest": "^21.1.1",
     "@prisma/client": "latest"
   },
   "packageManager": "npm@10.8.3",
