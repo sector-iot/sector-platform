@@ -51,18 +51,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Say Hello
-        run: echo "Hello, world!"
+        run: echo "Hello, world! shreyas"
 `;
 
   const octokit = new Octokit({ auth: token });
   const { data: repoInfo } = await octokit.repos.get({ owner, repo });
   const branch = repoInfo.default_branch;
 
+  let sha;
+  try {
+    const res = await octokit.repos.getContent({
+      owner,
+      repo,
+      path,
+      ref: branch,
+    });
+
+    // Confirm it's a file, not a directory
+    if (Array.isArray(res.data)) {
+      throw new Error(`${path} is a directory, not a file`);
+    }
+
+    sha = res.data.sha;
+    console.log(`📄 Existing file SHA: ${sha}`);
+  } catch (error) {
+    if (error.status === 404) {
+      console.log(`📁 File ${path} does not exist, creating it.`);
+    } else {
+      console.error(`❌ Error checking file existence:`, error.message);
+      throw error;
+    }
+  }
+
   await octokit.repos.createOrUpdateFileContents({
     owner,
     repo,
     path,
-    message: "Add Hello World workflow",
+    message: "Add or update Hello World workflow",
     content: Buffer.from(content).toString("base64"),
     branch,
     committer: {
@@ -73,9 +98,9 @@ jobs:
       name: "Doc Pusher",
       email: "bot@doc-pusher.app",
     },
+    ...(sha ? { sha } : {}),
   });
 }
-
 // Webhook handler
 app.post("/webhook", async (req, res) => {
   console.log("📦 Received event:", req.headers["x-github-event"]);
@@ -104,7 +129,10 @@ app.post("/webhook", async (req, res) => {
           await addBuildFile(name, owner, token);
           console.log(`✅ Added build file to ${owner}/${name}`);
         } catch (err) {
-          console.error(`❌ Failed to add build file to ${owner}/${name}:`, err.response?.data || err.message);
+          console.error(
+            `❌ Failed to add build file to ${owner}/${name}:`,
+            err.response?.data || err.message
+          );
         }
       }
     } catch (err) {
