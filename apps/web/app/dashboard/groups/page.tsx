@@ -82,12 +82,17 @@ export default function GroupsPage() {
     try {
       const { data, error } = await apiClient.getGroups();
       if (error) throw new Error(error.message);
-      setGroups(data || []);
+      // Transform data to match Group type
+      const transformedData = (data || []).map(group => ({
+        ...group,
+        description: group.description || undefined, // Ensure description is undefined if null
+      }));
+      setGroups(transformedData);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to fetch groups",
-        variant: "destructive",
+        variant: "error", // Updated from "destructive" to "error"
       });
     }
   };
@@ -101,7 +106,7 @@ export default function GroupsPage() {
       toast({
         title: "Error",
         description: "Failed to fetch devices",
-        variant: "destructive",
+        variant: "error", // Updated from "destructive" to "error"
       });
     }
   };
@@ -115,7 +120,7 @@ export default function GroupsPage() {
       toast({
         title: "Error",
         description: "Failed to fetch repositories",
-        variant: "destructive",
+        variant: "error", // Updated from "destructive" to "error"
       });
     }
   };
@@ -127,6 +132,15 @@ export default function GroupsPage() {
         description: newGroupDescription,
       });
       if (createError) throw new Error(createError.message);
+      
+      if (!group) {
+        toast({
+          title: "Error",
+          description: "Failed to create group - group data is missing",
+          variant: "error",
+        });
+        return;
+      }
 
       // Add selected devices to the group
       for (const deviceId of selectedDevices) {
@@ -161,14 +175,23 @@ export default function GroupsPage() {
       toast({
         title: "Error",
         description: "Failed to create group",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
 
   const handleDeleteGroup = async (groupId: string) => {
     try {
-      const { error } = await apiClient.deleteGroup(groupId);
+      const group = groups.find(g => g.id === groupId);
+      if (!group) {
+        toast({
+          title: "Error",
+          description: "Group not found",
+          variant: "error",
+        });
+        return;
+      }
+      const { error } = await apiClient.deleteGroup(group.id);
       if (error) throw new Error(error.message);
 
       toast({
@@ -181,7 +204,7 @@ export default function GroupsPage() {
       toast({
         title: "Error",
         description: "Failed to delete group",
-        variant: "destructive",
+        variant: "error", // Updated from "destructive" to "error"
       });
     }
   };
@@ -204,7 +227,7 @@ export default function GroupsPage() {
       toast({
         title: "Error",
         description: "Failed to remove device",
-        variant: "destructive",
+        variant: "error", // Updated from "destructive" to "error"
       });
     }
   };
@@ -230,7 +253,7 @@ export default function GroupsPage() {
       toast({
         title: "Error",
         description: "Failed to unlink repository",
-        variant: "destructive",
+        variant: "error", // Updated from "destructive" to "error"
       });
     }
   };

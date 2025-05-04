@@ -26,7 +26,7 @@ import { apiClient } from "@/lib/api-client";
 interface Group {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   devices: Array<{
     device: {
       id: string;
@@ -81,7 +81,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to fetch group",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -95,7 +95,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to fetch devices",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -109,7 +109,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to fetch repositories",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -133,7 +133,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to update group",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -159,7 +159,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to add device",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -182,7 +182,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to remove device",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -208,7 +208,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to link repository",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -231,7 +231,7 @@ export default function GroupDetailPage() {
       toast({
         title: "Error",
         description: "Failed to unlink repository",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
