@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
 import { Repository } from "@repo/database";
-import { GitBranch, GitCommit, GitPullRequest, Trash2 } from "lucide-react";
+import { GitBranch, GitCommit, GitPullRequest, Trash2, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import DeviceLinker from "@/components/dashboard/device-linker";
 import { toast } from "sonner";
@@ -55,6 +55,11 @@ export default function RepositoriesPage() {
       getDevices();
     }
   }, [isOpen]);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Repository ID copied to clipboard');
+  };
 
   const getRepositories = async () => {
     setLoading(true);
@@ -217,6 +222,18 @@ export default function RepositoriesPage() {
                 </div>
               </CardTitle>
               <CardDescription className="truncate">{repo.url}</CardDescription>
+              <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                <span className="mr-2">ID: {repo.id}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => copyToClipboard(repo.id)}
+                  className="h-6 w-6 hover:bg-accent hover:text-accent-foreground"
+                  title="Copy ID"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
