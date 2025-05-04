@@ -120,7 +120,7 @@ export const firmwareBuildController = {
           },
           group: {
             connect: {
-              id: repository.groups[0]?.id,
+              id: repository.groups[0]?.groupId,
             }
           },
           version: parseSemanticVersion(nextVersion),
