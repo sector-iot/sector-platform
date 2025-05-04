@@ -22,6 +22,11 @@ const routes = [
     href: "/dashboard/groups",
   },
   {
+    label: "Firmware Builds",
+    icon: Cpu,
+    href: "/dashboard/firmware",
+  },
+  {
     label: "Git Repositories",
     icon: GitBranch,
     href: "/dashboard/repositories",
@@ -47,7 +52,9 @@ export function Sidebar() {
                 href={route.href}
                 className={cn(
                   "flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-primary-foreground/10 hover:text-primary-foreground",
-                  pathname === route.href ? "bg-primary-foreground/20 text-primary-foreground" : "text-primary-foreground/80"
+                  pathname === route.href
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "text-primary-foreground/80"
                 )}
               >
                 <route.icon className="mr-2 h-4 w-4" />

@@ -23,6 +23,7 @@ model User {
   accounts      Account[]
   devices       Device[]
   repositories  Repository[]
+  groups        Group[]
 
   apikeys Apikey[]
 
@@ -85,12 +86,50 @@ model Device {
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   repositoryId String?
   repository   Repository? @relation(fields: [repositoryId], references: [id])
+  groups       GroupDevice[]
 
   @@map("device")
 }
 
 enum DeviceModel {
   ESP32
+}
+
+model Group {
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  devices      GroupDevice[]
+  repositories RepositoryGroup[]
+  firmwareBuilds FirmwareBuilds[]
+}
+
+model GroupDevice {
+  id        String   @id @default(cuid())
+  groupId   String
+  deviceId  String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, deviceId])
+}
+
+model RepositoryGroup {
+  id           String     @id @default(cuid())
+  repositoryId String
+  groupId      String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  group        Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([repositoryId, groupId])
 }
 
 model Repository {
@@ -103,6 +142,7 @@ model Repository {
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   devices        Device[]
   firmwareBuilds FirmwareBuilds[]
+  groups         RepositoryGroup[]
 }
 
 model FirmwareBuilds {
@@ -113,6 +153,8 @@ model FirmwareBuilds {
   updatedAt    DateTime    @updatedAt
   repositoryId String
   repository   Repository? @relation(fields: [repositoryId], references: [id])
+  groupId      String?
+  group        Group?      @relation(fields: [groupId], references: [id])
   status       BuildStatus @default(BUILDING)
 }
 

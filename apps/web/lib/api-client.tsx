@@ -1,7 +1,22 @@
-import { Prisma, Device, Repository, FirmwareBuilds } from '@repo/database';
+import {
+  Prisma,
+  Device,
+  Repository,
+  FirmwareBuilds,
+  Group,
+} from "@repo/database";
 
 type DeviceWithRepository = Device & {
   repository: Repository | null;
+};
+
+type GroupWithRelations = Group & {
+  devices: Array<{
+    device: Device;
+  }>;
+  repositories: Array<{
+    repository: Repository;
+  }>;
 };
 
 type ApiResponse<T> = {
@@ -13,7 +28,7 @@ type ApiResponse<T> = {
 };
 
 type RequestConfig = {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   headers?: Record<string, string>;
 };
@@ -27,7 +42,7 @@ export class ApiClient {
   ) {
     this.baseUrl = baseUrl;
     this.defaultHeaders = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
   }
 
@@ -43,14 +58,14 @@ export class ApiClient {
           ...config.headers,
         },
         body: config.body ? JSON.stringify(config.body) : undefined,
-        credentials: 'include', // Include credentials for authentication
+        credentials: "include", // Include credentials for authentication
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         return {
           error: {
-            message: errorData.error || 'An unexpected error occurred',
+            message: errorData.error || "An unexpected error occurred",
             code: response.status.toString(),
           },
         };
@@ -61,8 +76,8 @@ export class ApiClient {
     } catch (error) {
       return {
         error: {
-          message: error instanceof Error ? error.message : 'Network error',
-          code: 'NETWORK_ERROR',
+          message: error instanceof Error ? error.message : "Network error",
+          code: "NETWORK_ERROR",
         },
       };
     }
@@ -70,80 +85,80 @@ export class ApiClient {
 
   // Device endpoints
   async createDevice(data: Prisma.DeviceCreateWithoutUserInput) {
-    return this.request<Device>('/devices', {
-      method: 'POST',
+    return this.request<Device>("/devices", {
+      method: "POST",
       body: data,
     });
   }
 
   async getDevices() {
-    return this.request<DeviceWithRepository[]>('/devices', {
-      method: 'GET',
+    return this.request<DeviceWithRepository[]>("/devices", {
+      method: "GET",
     });
   }
 
   async getDevice(id: string) {
     return this.request<DeviceWithRepository>(`/devices/${id}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
   async updateDevice(id: string, data: Prisma.DeviceUpdateInput) {
     return this.request<Device>(`/devices/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: data,
     });
   }
 
   async deleteDevice(id: string) {
     return this.request<void>(`/devices/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   // Repository endpoints
   async createRepository(data: Prisma.RepositoryCreateWithoutUserInput) {
-    return this.request<Repository>('/repositories', {
-      method: 'POST',
+    return this.request<Repository>("/repositories", {
+      method: "POST",
       body: data,
     });
   }
 
   async getRepositories() {
-    return this.request<Repository[]>('/repositories', {
-      method: 'GET',
+    return this.request<Repository[]>("/repositories", {
+      method: "GET",
     });
   }
 
   async getRepository(id: string) {
     return this.request<Repository>(`/repositories/${id}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
   async updateRepository(id: string, data: Prisma.RepositoryUpdateInput) {
     return this.request<Repository>(`/repositories/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: data,
     });
   }
 
   async deleteRepository(id: string) {
     return this.request<void>(`/repositories/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   async linkDeviceToRepository(deviceId: string, repositoryId: string) {
-    return this.request<Device>('/repositories/link-device', {
-      method: 'POST',
+    return this.request<Device>("/repositories/link-device", {
+      method: "POST",
       body: { deviceId, repositoryId },
     });
   }
 
   async unlinkDeviceFromRepository(deviceId: string) {
     return this.request<Device>(`/repositories/unlink-device/${deviceId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
@@ -153,21 +168,21 @@ export class ApiClient {
     url?: string;
     repositoryId: string;
   }) {
-    return this.request<FirmwareBuilds>('/firmware', {
-      method: 'POST',
+    return this.request<FirmwareBuilds>("/firmware", {
+      method: "POST",
       body: data,
     });
   }
 
   async getFirmwareBuilds() {
-    return this.request<FirmwareBuilds[]>('/firmware', {
-      method: 'GET',
+    return this.request<FirmwareBuilds[]>("/firmware", {
+      method: "GET",
     });
   }
 
   async getFirmwareBuild(id: string) {
     return this.request<FirmwareBuilds>(`/firmware/${id}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
@@ -176,21 +191,90 @@ export class ApiClient {
     data: {
       version?: number;
       url?: string;
-      status?: 'BUILDING' | 'SUCCESS' | 'FAILED';
+      status?: "BUILDING" | "SUCCESS" | "FAILED";
     }
   ) {
     return this.request<FirmwareBuilds>(`/firmware/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: data,
     });
   }
 
   async deleteFirmwareBuild(id: string) {
     return this.request<void>(`/firmware/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
+    });
+  }
+
+  // Group endpoints
+  async createGroup(data: { name: string; description?: string }) {
+    return this.request<Group>("/groups", {
+      method: "POST",
+      body: data,
+    });
+  }
+
+  async getGroups() {
+    return this.request<GroupWithRelations[]>("/groups", {
+      method: "GET",
+    });
+  }
+
+  async getGroup(id: string) {
+    return this.request<GroupWithRelations>(`/groups/${id}`, {
+      method: "GET",
+    });
+  }
+
+  async updateGroup(id: string, data: { name?: string; description?: string }) {
+    return this.request<Group>(`/groups/${id}`, {
+      method: "PUT",
+      body: data,
+    });
+  }
+
+  async deleteGroup(id: string) {
+    return this.request<void>(`/groups/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async addDeviceToGroup(groupId: string, deviceId: string) {
+    return this.request<void>(`/groups/${groupId}/devices/${deviceId}`, {
+      method: "POST",
+    });
+  }
+
+  async removeDeviceFromGroup(groupId: string, deviceId: string) {
+    return this.request<void>(`/groups/${groupId}/devices/${deviceId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async linkRepositoryToGroup(groupId: string, repositoryId: string) {
+    return this.request<void>(
+      `/groups/${groupId}/repositories/${repositoryId}`,
+      {
+        method: "POST",
+      }
+    );
+  }
+
+  async unlinkRepositoryFromGroup(groupId: string, repositoryId: string) {
+    return this.request<void>(
+      `/groups/${groupId}/repositories/${repositoryId}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
+  async getFirmwareForDevice(deviceId: string) {
+    return this.request(`/firmware/device/${deviceId}`, {
+      method: "GET",
     });
   }
 }
 
 // Create a singleton instance
-export const apiClient = new ApiClient(`https://api.sector-iot.space/api`);
+export const apiClient = new ApiClient();

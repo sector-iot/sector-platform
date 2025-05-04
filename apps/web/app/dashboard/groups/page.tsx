@@ -25,55 +25,214 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Boxes, GitBranch, Power } from "lucide-react";
-import { useState } from "react";
+import { Boxes, GitBranch, Power, Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api-client";
 
-const groups = [
-  {
-    id: "group-001",
-    name: "Temperature Sensors",
-    deviceCount: 5,
-    onlineCount: 4,
-    repository: "temp-sensor-firmware",
-    lastUpdate: "2024-03-20 14:30",
-  },
-  {
-    id: "group-002",
-    name: "Humidity Monitors",
-    deviceCount: 3,
-    onlineCount: 3,
-    repository: "humidity-monitor-fw",
-    lastUpdate: "2024-03-19 09:15",
-  },
-  {
-    id: "group-003",
-    name: "Motion Detectors",
-    deviceCount: 4,
-    onlineCount: 2,
-    repository: "motion-detect-code",
-    lastUpdate: "2024-03-18 23:45",
-  },
-];
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  devices: Array<{
+    device: {
+      id: string;
+      name: string;
+    };
+  }>;
+  repositories: Array<{
+    repository: {
+      id: string;
+      name: string;
+    };
+  }>;
+}
 
-const availableDevices = [
-  { id: "device1", name: "Temperature Sensor 1" },
-  { id: "device2", name: "Temperature Sensor 2" },
-  { id: "device3", name: "Humidity Monitor 1" },
-  { id: "device4", name: "Motion Detector 1" },
-  { id: "device5", name: "Temperature Sensor 3" },
-];
+interface Device {
+  id: string;
+  name: string;
+}
+
+interface Repository {
+  id: string;
+  name: string;
+}
 
 export default function GroupsPage() {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [repositories, setRepositories] = useState<Repository[]>([]);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [selectedRepository, setSelectedRepository] = useState<string>("");
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDescription, setNewGroupDescription] = useState("");
+  const { toast } = useToast();
+  const router = useRouter();
 
-  const handleDeviceToggle = (deviceId: string) => {
-    setSelectedDevices(current =>
-      current.includes(deviceId)
-        ? current.filter(id => id !== deviceId)
-        : [...current, deviceId]
-    );
+  useEffect(() => {
+    fetchGroups();
+    fetchDevices();
+    fetchRepositories();
+  }, []);
+
+  const fetchGroups = async () => {
+    try {
+      const { data, error } = await apiClient.getGroups();
+      if (error) throw new Error(error.message);
+      setGroups(data || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch groups",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchDevices = async () => {
+    try {
+      const { data, error } = await apiClient.getDevices();
+      if (error) throw new Error(error.message);
+      setDevices(data || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch devices",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchRepositories = async () => {
+    try {
+      const { data, error } = await apiClient.getRepositories();
+      if (error) throw new Error(error.message);
+      setRepositories(data || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch repositories",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    try {
+      const { data: group, error: createError } = await apiClient.createGroup({
+        name: newGroupName,
+        description: newGroupDescription,
+      });
+      if (createError) throw new Error(createError.message);
+
+      // Add selected devices to the group
+      for (const deviceId of selectedDevices) {
+        const { error: deviceError } = await apiClient.addDeviceToGroup(
+          group.id,
+          deviceId
+        );
+        if (deviceError) throw new Error(deviceError.message);
+      }
+
+      // Link repository if selected
+      if (selectedRepository) {
+        const { error: repoError } = await apiClient.linkRepositoryToGroup(
+          group.id,
+          selectedRepository
+        );
+        if (repoError) throw new Error(repoError.message);
+      }
+
+      toast({
+        title: "Success",
+        description: "Group created successfully",
+      });
+
+      setIsAddingGroup(false);
+      setNewGroupName("");
+      setNewGroupDescription("");
+      setSelectedDevices([]);
+      setSelectedRepository("");
+      fetchGroups();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create group",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      const { error } = await apiClient.deleteGroup(groupId);
+      if (error) throw new Error(error.message);
+
+      toast({
+        title: "Success",
+        description: "Group deleted successfully",
+      });
+
+      fetchGroups();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete group",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveDevice = async (groupId: string, deviceId: string) => {
+    try {
+      const { error } = await apiClient.removeDeviceFromGroup(
+        groupId,
+        deviceId
+      );
+      if (error) throw new Error(error.message);
+
+      toast({
+        title: "Success",
+        description: "Device removed from group",
+      });
+
+      fetchGroups();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove device",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnlinkRepository = async (
+    groupId: string,
+    repositoryId: string
+  ) => {
+    try {
+      const { error } = await apiClient.unlinkRepositoryFromGroup(
+        groupId,
+        repositoryId
+      );
+      if (error) throw new Error(error.message);
+
+      toast({
+        title: "Success",
+        description: "Repository unlinked from group",
+      });
+
+      fetchGroups();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to unlink repository",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -87,7 +246,10 @@ export default function GroupsPage() {
         </div>
         <Dialog open={isAddingGroup} onOpenChange={setIsAddingGroup}>
           <DialogTrigger asChild>
-            <Button>Create Group</Button>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Group
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -99,30 +261,58 @@ export default function GroupsPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Group Name</Label>
-                <Input id="name" placeholder="Enter group name" />
+                <Input
+                  id="name"
+                  placeholder="Enter group name"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  placeholder="Enter group description"
+                  value={newGroupDescription}
+                  onChange={(e) => setNewGroupDescription(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="repository">Git Repository</Label>
-                <Select>
+                <Select
+                  value={selectedRepository}
+                  onValueChange={setSelectedRepository}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select repository" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="repo1">Temperature Sensor Firmware</SelectItem>
-                    <SelectItem value="repo2">Humidity Monitor Firmware</SelectItem>
-                    <SelectItem value="repo3">Motion Detector Code</SelectItem>
+                    {repositories.map((repo) => (
+                      <SelectItem key={repo.id} value={repo.id}>
+                        {repo.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Select Devices</Label>
                 <div className="border rounded-md p-4 space-y-2 max-h-[200px] overflow-y-auto">
-                  {availableDevices.map((device) => (
-                    <div key={device.id} className="flex items-center space-x-2">
+                  {devices.map((device) => (
+                    <div
+                      key={device.id}
+                      className="flex items-center space-x-2"
+                    >
                       <Checkbox
                         id={device.id}
                         checked={selectedDevices.includes(device.id)}
-                        onCheckedChange={() => handleDeviceToggle(device.id)}
+                        onCheckedChange={() => {
+                          setSelectedDevices((current) =>
+                            current.includes(device.id)
+                              ? current.filter((id) => id !== device.id)
+                              : [...current, device.id]
+                          );
+                        }}
                       />
                       <label
                         htmlFor={device.id}
@@ -139,10 +329,7 @@ export default function GroupsPage() {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button onClick={() => {
-                setIsAddingGroup(false);
-                setSelectedDevices([]);
-              }}>Create Group</Button>
+              <Button onClick={handleCreateGroup}>Create Group</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -156,33 +343,70 @@ export default function GroupsPage() {
                   <Boxes className="h-5 w-5" />
                   <span>{group.name}</span>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteGroup(group.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </CardTitle>
-              <CardDescription>{group.id}</CardDescription>
+              <CardDescription>
+                {group.description || "No description"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Power className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {group.onlineCount}/{group.deviceCount} online
-                    </span>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Devices</h4>
+                  <div className="space-y-2">
+                    {group.devices.map(({ device }) => (
+                      <div
+                        key={device.id}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm">{device.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleRemoveDevice(group.id, device.id)
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <GitBranch className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{group.repository}</span>
+                  <h4 className="font-medium">Repositories</h4>
+                  <div className="space-y-2">
+                    {group.repositories.map(({ repository }) => (
+                      <div
+                        key={repository.id}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm">{repository.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleUnlinkRepository(group.id, repository.id)
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Last updated: {group.lastUpdate}
-                  </p>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" className="flex-1">
-                    Update All
-                  </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => router.push(`/dashboard/groups/${group.id}`)}
+                  >
                     Configure
                   </Button>
                 </div>
