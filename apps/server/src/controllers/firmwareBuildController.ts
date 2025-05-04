@@ -16,6 +16,7 @@ const firmwareBuildSchema = {
         "Version must follow semver format (MAJOR.MINOR.PATCH)"
       )
       .optional(),
+      status: z.enum(["BUILDING", "SUCCESS", "FAILED"]).optional(),
   }),
   update: z.object({
     url: z.string().url("Must be a valid URL").optional(),
@@ -120,7 +121,7 @@ export const firmwareBuildController = {
               }
             : undefined,
           version: parseSemanticVersion(nextVersion),
-          status: "BUILDING",
+          status: data.status || "BUILDING",
         },
       });
 
@@ -230,26 +231,23 @@ export const firmwareBuildController = {
 
       // Get all group IDs the device belongs to
       const groupIds = device.groups.map((gd) => gd.groupId);
-      
-      // Construct the query condition based on whether repositoryId exists
-      const orConditions = [];
-      if (device.repositoryId) {
-        orConditions.push({ repositoryId: device.repositoryId });
-      }
-      if (groupIds.length > 0) {
-        orConditions.push({ groupId: { in: groupIds } });
-      }
-      
-      // If no valid conditions, return early
-      if (orConditions.length === 0) {
-        return res.status(404).json({ error: "No firmware build found - device has no repository or groups" });
-      }
+      console.log("Group IDs:", groupIds);
+
 
       // Find the latest firmware build for the device's repository or any of its groups
       const firmwareBuild = await prisma.firmwareBuilds.findFirst({
         where: {
-          OR: orConditions,
           status: "SUCCESS",
+          OR: [
+            {
+              groupId: {
+                in: groupIds,
+              }
+            },
+            {
+              repositoryId: device.repositoryId ?? undefined,
+            }
+          ]
         },
         include: {
           repository: true,
