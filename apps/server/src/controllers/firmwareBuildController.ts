@@ -56,6 +56,9 @@ export const firmwareBuildController = {
           id: data.repositoryId,
           userId: user.id,
         },
+        include: {
+          groups: true,
+        },
       });
 
       if (!repository) {
@@ -119,7 +122,11 @@ export const firmwareBuildController = {
                   id: data.groupId,
                 },
               }
-            : undefined,
+            : {
+              connect: {
+                id: repository.groups[0]?.id,
+              }
+            },
           version: parseSemanticVersion(nextVersion),
           status: data.status || "BUILDING",
         },
