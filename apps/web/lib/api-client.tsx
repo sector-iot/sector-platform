@@ -38,7 +38,7 @@ export class ApiClient {
   private defaultHeaders: Record<string, string>;
 
   constructor(
-    baseUrl: string = `${process.env.NEXT_PUBLIC_API_URL as string}/api`
+    baseUrl: string = `${process.env.NEXT_PUBLIC_API_URL as string ?? "https://api.sector-iot.space"}/api`
   ) {
     this.baseUrl = baseUrl;
     this.defaultHeaders = {
