@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "@repo/database";
 import { z } from "zod";
+import { mqttClient } from "../lib/mqtt-client";
 
 // Validation schemas
 const firmwareBuildSchema = {
@@ -24,6 +25,21 @@ const firmwareBuildSchema = {
     id: z.string().min(1, "Id is required"),
   }),
 };
+
+// Helper function to convert semantic version to numeric for database
+function parseSemanticVersion(version: string): number {
+  const [major, minor, patch] = version.split('.').map(Number);
+  // Convert to a sortable number format - this is a simplification but works for basic versioning
+  return major * 10000 + minor * 100 + patch;
+}
+
+// Helper function to convert numeric version back to semantic version string
+function formatSemanticVersion(versionNum: number): string {
+  const major = Math.floor(versionNum / 10000);
+  const minor = Math.floor((versionNum % 10000) / 100);
+  const patch = versionNum % 100;
+  return `${major}.${minor}.${patch}`;
+}
 
 export const firmwareBuildController = {
   async createFirmwareBuild(req: Request, res: Response) {
@@ -75,11 +91,10 @@ export const firmwareBuildController = {
         if (!latestBuild) {
           nextVersion = "0.1.0";
         } else {
+          // Get the string representation of the version number
+          const versionStr = formatSemanticVersion(latestBuild.version);
           // Parse the latest version
-          const [major, minor, patch] = latestBuild.version
-            ?.toString()
-            .split(".")
-            .map(Number);
+          const [major, minor, patch] = versionStr.split(".").map(Number);
           // Increment patch version
           nextVersion = `${major}.${minor}.${patch + 1}`;
         }
@@ -104,11 +119,26 @@ export const firmwareBuildController = {
                 },
               }
             : undefined,
-          version: parseFloat(nextVersion),
+          version: parseSemanticVersion(nextVersion),
           status: "BUILDING",
         },
       });
-      res.status(201).json(firmwareBuild);
+
+      // Add version string for API response
+      const responseData = {
+        ...firmwareBuild,
+        versionString: nextVersion
+      };
+
+      // Publish the new firmware build event to MQTT
+      try {
+        await mqttClient.publishFirmwareUpdate(firmwareBuild);
+      } catch (mqttError) {
+        console.error("Error publishing MQTT message:", mqttError);
+        // Don't fail the request if MQTT publishing fails
+      }
+
+      res.status(201).json(responseData);
     } catch (error) {
       console.error("Error creating firmware build:", error);
       res.status(400).json({ error: "Invalid firmware build data" });
@@ -131,7 +161,14 @@ export const firmwareBuildController = {
           group: true,
         },
       });
-      res.json(firmwareBuilds);
+
+      // Add version strings to each build
+      const buildsWithVersionStrings = firmwareBuilds.map(build => ({
+        ...build,
+        versionString: formatSemanticVersion(build.version)
+      }));
+      
+      res.json(buildsWithVersionStrings);
     } catch (error) {
       console.error("Error fetching firmware builds:", error);
       res.status(500).json({ error: "Server error" });
@@ -158,7 +195,13 @@ export const firmwareBuildController = {
         return res.status(404).json({ error: "Firmware build not found" });
       }
 
-      res.json(firmwareBuild);
+      // Add version string for response
+      const responseData = {
+        ...firmwareBuild,
+        versionString: formatSemanticVersion(firmwareBuild.version)
+      };
+
+      res.json(responseData);
     } catch (error) {
       console.error("Error fetching firmware build:", error);
       res.status(400).json({ error: "Invalid firmware build ID" });
@@ -187,14 +230,25 @@ export const firmwareBuildController = {
 
       // Get all group IDs the device belongs to
       const groupIds = device.groups.map((gd) => gd.groupId);
+      
+      // Construct the query condition based on whether repositoryId exists
+      const orConditions = [];
+      if (device.repositoryId) {
+        orConditions.push({ repositoryId: device.repositoryId });
+      }
+      if (groupIds.length > 0) {
+        orConditions.push({ groupId: { in: groupIds } });
+      }
+      
+      // If no valid conditions, return early
+      if (orConditions.length === 0) {
+        return res.status(404).json({ error: "No firmware build found - device has no repository or groups" });
+      }
 
       // Find the latest firmware build for the device's repository or any of its groups
       const firmwareBuild = await prisma.firmwareBuilds.findFirst({
         where: {
-          OR: [
-            { repositoryId: device.repositoryId },
-            { groupId: { in: groupIds } },
-          ],
+          OR: orConditions,
           status: "SUCCESS",
         },
         include: {
@@ -210,7 +264,13 @@ export const firmwareBuildController = {
         return res.status(404).json({ error: "No firmware build found" });
       }
 
-      res.json(firmwareBuild);
+      // Add version string for response
+      const responseData = {
+        ...firmwareBuild,
+        versionString: formatSemanticVersion(firmwareBuild.version)
+      };
+
+      res.json(responseData);
     } catch (error) {
       console.error("Error fetching firmware for device:", error);
       res.status(500).json({ error: "Server error" });
@@ -241,8 +301,29 @@ export const firmwareBuildController = {
       const firmwareBuild = await prisma.firmwareBuilds.update({
         where: { id },
         data,
+        include: {
+          repository: true,
+          group: true,
+        },
       });
-      res.json(firmwareBuild);
+
+      // If status is updated to SUCCESS, publish the firmware update event
+      if (data.status === "SUCCESS") {
+        try {
+          await mqttClient.publishFirmwareUpdate(firmwareBuild);
+        } catch (mqttError) {
+          console.error("Error publishing MQTT message:", mqttError);
+          // Don't fail the request if MQTT publishing fails
+        }
+      }
+
+      // Add version string for response
+      const responseData = {
+        ...firmwareBuild,
+        versionString: formatSemanticVersion(firmwareBuild.version)
+      };
+
+      res.json(responseData);
     } catch (error) {
       console.error("Error updating firmware build:", error);
       res.status(400).json({ error: "Invalid update data" });

@@ -5,9 +5,13 @@ import dotenv from 'dotenv';
 import { toNodeHandler } from "better-auth/node";
 import { router as apiRouter } from './routes';
 import { auth } from './lib/auth';
+import { mqttClient } from './lib/mqtt-client';
 
 // Load environment variables
 dotenv.config();
+
+// Initialize MQTT client
+console.log('Initializing MQTT client...');
 
 const app = express();
 const port = process.env.PORT || 5000;

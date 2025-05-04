@@ -10,9 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 
+// Extended type to include repository, group, and versionString from API response
+interface FirmwareBuildWithRelations extends FirmwareBuilds {
+  repository?: { id: string; name: string; url: string };
+  group?: { id: string; name: string; description?: string };
+  versionString?: string; // Added to support the new version display
+}
+
 export default function FirmwareBuildsPage() {
   const { toast } = useToast();
-  const [firmwareBuilds, setFirmwareBuilds] = useState<FirmwareBuilds[]>([]);
+  const [firmwareBuilds, setFirmwareBuilds] = useState<FirmwareBuildWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +37,7 @@ export default function FirmwareBuildsPage() {
       toast({
         title: "Error",
         description: "Failed to fetch firmware builds",
-        variant: "destructive",
+        variant: "error",
       });
     } finally {
       setLoading(false);
@@ -40,7 +47,7 @@ export default function FirmwareBuildsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "SUCCESS":
-        return <Badge variant="success">Success</Badge>;
+        return <Badge variant="default">Success</Badge>;
       case "BUILDING":
         return <Badge variant="secondary">Building</Badge>;
       case "FAILED":
@@ -80,7 +87,7 @@ export default function FirmwareBuildsPage() {
           <Card key={build.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>v{build.version}</span>
+                <span>v{build.versionString || build.version}</span>
                 {getStatusBadge(build.status)}
               </CardTitle>
             </CardHeader>
@@ -103,7 +110,7 @@ export default function FirmwareBuildsPage() {
                   <Button
                     variant="link"
                     className="p-0 h-auto"
-                    onClick={() => window.open(build.url, "_blank")}
+                    onClick={() => window.open(build.url as string, "_blank")}
                   >
                     Download
                   </Button>
