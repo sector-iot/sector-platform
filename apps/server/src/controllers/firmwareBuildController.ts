@@ -61,6 +61,8 @@ export const firmwareBuildController = {
         },
       });
 
+      console.log("Repository groups:", repository?.groups);
+
       if (!repository) {
         return res.status(404).json({ error: "Repository not found" });
       }
@@ -116,17 +118,11 @@ export const firmwareBuildController = {
               id: data.repositoryId,
             },
           },
-          group: data.groupId
-            ? {
-                connect: {
-                  id: data.groupId,
-                },
-              }
-            : {
-              connect: {
-                id: repository.groups[0]?.id,
-              }
-            },
+          group: {
+            connect: {
+              id: repository.groups[0]?.id,
+            }
+          },
           version: parseSemanticVersion(nextVersion),
           status: data.status || "BUILDING",
         },
