@@ -4,7 +4,8 @@
     "build": {
       "dependsOn": [
         "^generate",
-        "^build"
+        "^build",
+        "^db:migrate:deploy"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
