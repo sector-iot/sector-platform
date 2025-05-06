@@ -27,27 +27,6 @@ const firmwareBuildSchema = {
   }),
 };
 
-// Helper function to handle version formatting
-function getVersionNumber(versionString: string): number {
-  // Simply replace dots and convert to number for storage
-  return parseFloat(versionString.replace(/\./g, ""));
-}
-
-// Helper function to format database version to semantic version
-function getVersionString(versionNum: number): string {
-  // Convert numeric version to semantic version string format
-  const versionStr = versionNum.toString();
-  // Handle single digit versions (padding not needed for them)
-  if (versionStr.length === 1) return `${versionStr}.0.0`;
-  if (versionStr.length === 2) return `${versionStr[0]}.${versionStr[1]}.0`;
-  
-  // For 3 digits or more
-  const major = versionStr[0];
-  const minor = versionStr[1];
-  const patch = versionStr.substring(2);
-  return `${major}.${minor}.${patch}`;
-}
-
 export const firmwareBuildController = {
   async createFirmwareBuild(req: Request, res: Response) {
     const user = req.user;
@@ -103,10 +82,15 @@ export const firmwareBuildController = {
         if (!latestBuild) {
           nextVersion = "0.1.0";
         } else {
-          // Get the string representation of the version number
-          const versionStr = getVersionString(latestBuild.version);
-          // Parse the latest version
-          const [major, minor, patch] = versionStr.split(".").map(Number);
+          // Get the actual version number (stored as float in DB)
+          const latestVersion = latestBuild.version;
+          
+          // Parse into semver parts - we'll simply calculate a new patch version
+          // Use 0 as fallback values
+          const major = Math.floor(latestVersion);
+          const minor = Math.floor((latestVersion * 10) % 10);
+          const patch = Math.floor((latestVersion * 100) % 10);
+          
           // Increment patch version
           nextVersion = `${major}.${minor}.${patch + 1}`;
         }
@@ -115,6 +99,10 @@ export const firmwareBuildController = {
       if (!nextVersion) {
         nextVersion = "0.1.0";
       }
+
+      // Convert version string to float for storage
+      // For example, "3.0.0" becomes 3.0
+      const versionAsFloat = parseFloat(nextVersion.replace(/\.(\d+)$/, ""));
 
       const firmwareBuild = await prisma.firmwareBuilds.create({
         data: {
@@ -129,15 +117,15 @@ export const firmwareBuildController = {
               id: repository.groups[0]?.groupId,
             }
           },
-          version: getVersionNumber(nextVersion),
+          version: versionAsFloat,
           status: data.status || "BUILDING",
         },
       });
 
-      // Add version string for API response
+      // Format the response to include the original version string
       const responseData = {
         ...firmwareBuild,
-        versionString: nextVersion
+        version: nextVersion  // Override with the semantic version string
       };
 
       // Publish the new firmware build event to MQTT
@@ -172,13 +160,21 @@ export const firmwareBuildController = {
         },
       });
 
-      // Add version strings to each build
-      const buildsWithVersionStrings = firmwareBuilds.map(build => ({
-        ...build,
-        versionString: getVersionString(build.version)
-      }));
+      // Format version numbers for response
+      const formattedBuilds = firmwareBuilds.map(build => {
+        // Convert float version to semantic version string
+        const major = Math.floor(build.version);
+        const minor = Math.floor((build.version * 10) % 10);
+        const patch = Math.floor((build.version * 100) % 10);
+        const versionString = `${major}.${minor}.${patch}`;
+        
+        return {
+          ...build,
+          version: versionString // Replace the numeric version with the formatted string
+        };
+      });
       
-      res.json(buildsWithVersionStrings);
+      res.json(formattedBuilds);
     } catch (error) {
       console.error("Error fetching firmware builds:", error);
       res.status(500).json({ error: "Server error" });
@@ -205,10 +201,15 @@ export const firmwareBuildController = {
         return res.status(404).json({ error: "Firmware build not found" });
       }
 
-      // Add version string for response
+      // Format version number for response
+      const major = Math.floor(firmwareBuild.version);
+      const minor = Math.floor((firmwareBuild.version * 10) % 10);
+      const patch = Math.floor((firmwareBuild.version * 100) % 10);
+      const versionString = `${major}.${minor}.${patch}`;
+      
       const responseData = {
         ...firmwareBuild,
-        versionString: getVersionString(firmwareBuild.version)
+        version: versionString // Replace the numeric version with the formatted string
       };
 
       res.json(responseData);
@@ -271,10 +272,15 @@ export const firmwareBuildController = {
         return res.status(404).json({ error: "No firmware build found" });
       }
 
-      // Add version string for response
+      // Format version number for response
+      const major = Math.floor(firmwareBuild.version);
+      const minor = Math.floor((firmwareBuild.version * 10) % 10);
+      const patch = Math.floor((firmwareBuild.version * 100) % 10);
+      const versionString = `${major}.${minor}.${patch}`;
+      
       const responseData = {
         ...firmwareBuild,
-        versionString: getVersionString(firmwareBuild.version)
+        version: versionString // Replace the numeric version with the formatted string
       };
 
       res.json(responseData);
@@ -324,10 +330,15 @@ export const firmwareBuildController = {
         }
       }
 
-      // Add version string for response
+      // Format version number for response
+      const major = Math.floor(firmwareBuild.version);
+      const minor = Math.floor((firmwareBuild.version * 10) % 10);
+      const patch = Math.floor((firmwareBuild.version * 100) % 10);
+      const versionString = `${major}.${minor}.${patch}`;
+      
       const responseData = {
         ...firmwareBuild,
-        versionString: getVersionString(firmwareBuild.version)
+        version: versionString // Replace the numeric version with the formatted string
       };
 
       res.json(responseData);
