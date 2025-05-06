@@ -27,18 +27,24 @@ const firmwareBuildSchema = {
   }),
 };
 
-// Helper function to convert semantic version to numeric for database
-function parseSemanticVersion(version: string): number {
-  const [major, minor, patch] = version.split('.').map(Number);
-  // Convert to a sortable number format - this is a simplification but works for basic versioning
-  return major * 10000 + minor * 100 + patch;
+// Helper function to handle version formatting
+function getVersionNumber(versionString: string): number {
+  // Simply replace dots and convert to number for storage
+  return parseFloat(versionString.replace(/\./g, ""));
 }
 
-// Helper function to convert numeric version back to semantic version string
-function formatSemanticVersion(versionNum: number): string {
-  const major = Math.floor(versionNum / 10000);
-  const minor = Math.floor((versionNum % 10000) / 100);
-  const patch = versionNum % 100;
+// Helper function to format database version to semantic version
+function getVersionString(versionNum: number): string {
+  // Convert numeric version to semantic version string format
+  const versionStr = versionNum.toString();
+  // Handle single digit versions (padding not needed for them)
+  if (versionStr.length === 1) return `${versionStr}.0.0`;
+  if (versionStr.length === 2) return `${versionStr[0]}.${versionStr[1]}.0`;
+  
+  // For 3 digits or more
+  const major = versionStr[0];
+  const minor = versionStr[1];
+  const patch = versionStr.substring(2);
   return `${major}.${minor}.${patch}`;
 }
 
@@ -98,7 +104,7 @@ export const firmwareBuildController = {
           nextVersion = "0.1.0";
         } else {
           // Get the string representation of the version number
-          const versionStr = formatSemanticVersion(latestBuild.version);
+          const versionStr = getVersionString(latestBuild.version);
           // Parse the latest version
           const [major, minor, patch] = versionStr.split(".").map(Number);
           // Increment patch version
@@ -123,7 +129,7 @@ export const firmwareBuildController = {
               id: repository.groups[0]?.groupId,
             }
           },
-          version: parseSemanticVersion(nextVersion),
+          version: getVersionNumber(nextVersion),
           status: data.status || "BUILDING",
         },
       });
@@ -169,7 +175,7 @@ export const firmwareBuildController = {
       // Add version strings to each build
       const buildsWithVersionStrings = firmwareBuilds.map(build => ({
         ...build,
-        versionString: formatSemanticVersion(build.version)
+        versionString: getVersionString(build.version)
       }));
       
       res.json(buildsWithVersionStrings);
@@ -202,7 +208,7 @@ export const firmwareBuildController = {
       // Add version string for response
       const responseData = {
         ...firmwareBuild,
-        versionString: formatSemanticVersion(firmwareBuild.version)
+        versionString: getVersionString(firmwareBuild.version)
       };
 
       res.json(responseData);
@@ -268,7 +274,7 @@ export const firmwareBuildController = {
       // Add version string for response
       const responseData = {
         ...firmwareBuild,
-        versionString: formatSemanticVersion(firmwareBuild.version)
+        versionString: getVersionString(firmwareBuild.version)
       };
 
       res.json(responseData);
@@ -321,7 +327,7 @@ export const firmwareBuildController = {
       // Add version string for response
       const responseData = {
         ...firmwareBuild,
-        versionString: formatSemanticVersion(firmwareBuild.version)
+        versionString: getVersionString(firmwareBuild.version)
       };
 
       res.json(responseData);
