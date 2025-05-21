@@ -16,7 +16,7 @@ const firmwareBuildSchema = {
         "Version must follow semver format (MAJOR.MINOR.PATCH)"
       )
       .optional(),
-      status: z.enum(["BUILDING", "SUCCESS", "FAILED"]).optional(),
+    status: z.enum(["BUILDING", "SUCCESS", "FAILED"]).optional(),
   }),
   update: z.object({
     url: z.string().url("Must be a valid URL").optional(),
@@ -84,13 +84,13 @@ export const firmwareBuildController = {
         } else {
           // Get the actual version number (stored as float in DB)
           const latestVersion = latestBuild.version;
-          
+
           // Parse into semver parts - we'll simply calculate a new patch version
           // Use 0 as fallback values
           const major = Math.floor(latestVersion);
           const minor = Math.floor((latestVersion * 10) % 10);
           const patch = Math.floor((latestVersion * 100) % 10);
-          
+
           // Increment patch version
           nextVersion = `${major}.${minor}.${patch + 1}`;
         }
@@ -114,8 +114,8 @@ export const firmwareBuildController = {
           },
           group: {
             connect: {
-              id: repository.groups[0]?.groupId,
-            }
+              id: repository.groups[0]?.id,
+            },
           },
           version: versionAsFloat,
           status: data.status || "BUILDING",
@@ -125,7 +125,7 @@ export const firmwareBuildController = {
       // Format the response to include the original version string
       const responseData = {
         ...firmwareBuild,
-        version: nextVersion  // Override with the semantic version string
+        version: nextVersion, // Override with the semantic version string
       };
 
       // Publish the new firmware build event to MQTT
@@ -161,19 +161,19 @@ export const firmwareBuildController = {
       });
 
       // Format version numbers for response
-      const formattedBuilds = firmwareBuilds.map(build => {
+      const formattedBuilds = firmwareBuilds.map((build) => {
         // Convert float version to semantic version string
         const major = Math.floor(build.version);
         const minor = Math.floor((build.version * 10) % 10);
         const patch = Math.floor((build.version * 100) % 10);
         const versionString = `${major}.${minor}.${patch}`;
-        
+
         return {
           ...build,
-          version: versionString // Replace the numeric version with the formatted string
+          version: versionString, // Replace the numeric version with the formatted string
         };
       });
-      
+
       res.json(formattedBuilds);
     } catch (error) {
       console.error("Error fetching firmware builds:", error);
@@ -206,10 +206,10 @@ export const firmwareBuildController = {
       const minor = Math.floor((firmwareBuild.version * 10) % 10);
       const patch = Math.floor((firmwareBuild.version * 100) % 10);
       const versionString = `${major}.${minor}.${patch}`;
-      
+
       const responseData = {
         ...firmwareBuild,
-        version: versionString // Replace the numeric version with the formatted string
+        version: versionString, // Replace the numeric version with the formatted string
       };
 
       res.json(responseData);
@@ -223,15 +223,11 @@ export const firmwareBuildController = {
     try {
       const { deviceId } = req.params;
 
-      // Find the device and its groups
+      // Find the device and its group
       const device = await prisma.device.findUnique({
         where: { id: deviceId },
         include: {
-          groups: {
-            include: {
-              group: true,
-            },
-          },
+          group: true,
         },
       });
 
@@ -239,25 +235,21 @@ export const firmwareBuildController = {
         return res.status(404).json({ error: "Device not found" });
       }
 
-      // Get all group IDs the device belongs to
-      const groupIds = device.groups.map((gd) => gd.groupId);
-      console.log("Group IDs:", groupIds);
+      // Get the device's group ID if it exists
+      const groupId = device.group?.id;
 
-
-      // Find the latest firmware build for the device's repository or any of its groups
+      // Find the latest firmware build for the device's repository or its group
       const firmwareBuild = await prisma.firmwareBuilds.findFirst({
         where: {
           status: "SUCCESS",
           OR: [
             {
-              groupId: {
-                in: groupIds,
-              }
+              groupId: groupId ?? undefined,
             },
             {
               repositoryId: device.repositoryId ?? undefined,
-            }
-          ]
+            },
+          ],
         },
         include: {
           repository: true,
@@ -277,10 +269,10 @@ export const firmwareBuildController = {
       const minor = Math.floor((firmwareBuild.version * 10) % 10);
       const patch = Math.floor((firmwareBuild.version * 100) % 10);
       const versionString = `${major}.${minor}.${patch}`;
-      
+
       const responseData = {
         ...firmwareBuild,
-        version: versionString // Replace the numeric version with the formatted string
+        version: versionString, // Replace the numeric version with the formatted string
       };
 
       res.json(responseData);
@@ -335,10 +327,10 @@ export const firmwareBuildController = {
       const minor = Math.floor((firmwareBuild.version * 10) % 10);
       const patch = Math.floor((firmwareBuild.version * 100) % 10);
       const versionString = `${major}.${minor}.${patch}`;
-      
+
       const responseData = {
         ...firmwareBuild,
-        version: versionString // Replace the numeric version with the formatted string
+        version: versionString, // Replace the numeric version with the formatted string
       };
 
       res.json(responseData);

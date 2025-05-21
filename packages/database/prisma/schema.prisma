@@ -85,7 +85,8 @@ model Device {
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   repositoryId String?
   repository   Repository? @relation(fields: [repositoryId], references: [id])
-  groups       Group[]     // Many-to-many relationship with Group
+  groupId      String?
+  group        Group?      @relation(fields: [groupId], references: [id])
 
   @@map("device")
 }
@@ -102,7 +103,7 @@ model Group {
   updatedAt    DateTime     @updatedAt
   userId       String
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  devices      Device[]     // Many-to-many relationship with Device
+  devices      Device[]     // One-to-many relationship with Device
   repositoryId String?
   repository   Repository?  @relation(fields: [repositoryId], references: [id])
   firmwareBuilds FirmwareBuilds[]

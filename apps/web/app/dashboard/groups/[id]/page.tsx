@@ -34,6 +34,7 @@ interface Group {
 interface Device {
   id: string;
   name: string;
+  groupId?: string | null;
 }
 
 interface Repository {
@@ -321,9 +322,7 @@ export default function GroupDetailPage() {
                     {devices
                       .filter(
                         (device) =>
-                          !group.devices.some(
-                            (groupDevice) => groupDevice.id === device.id
-                          )
+                          !device.groupId || device.groupId === group.id
                       )
                       .map((device) => (
                         <SelectItem key={device.id} value={device.id}>

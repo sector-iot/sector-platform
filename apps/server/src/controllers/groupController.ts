@@ -172,21 +172,20 @@ export const addDeviceToGroup = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Group or device not found" });
     }
 
-    // Update the group to include the device
-    const updatedGroup = await prisma.group.update({
-      where: { id: groupId },
+    // Update the device to be in the group
+    const updatedDevice = await prisma.device.update({
+      where: { id: deviceId },
       data: {
-        devices: {
-          connect: { id: deviceId },
+        group: {
+          connect: { id: groupId },
         },
       },
       include: {
-        devices: true,
-        repository: true,
+        group: true,
       },
     });
 
-    return res.status(200).json(updatedGroup);
+    return res.status(200).json(updatedDevice);
   } catch (error) {
     console.error("Error adding device to group:", error);
     return res.status(400).json({ error: "Invalid input" });
@@ -214,21 +213,20 @@ export const removeDeviceFromGroup = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Group not found" });
     }
 
-    // Update the group to remove the device
-    const updatedGroup = await prisma.group.update({
-      where: { id: groupId },
+    // Update the device to remove it from the group
+    const updatedDevice = await prisma.device.update({
+      where: { id: deviceId },
       data: {
-        devices: {
-          disconnect: { id: deviceId },
+        group: {
+          disconnect: true,
         },
       },
       include: {
-        devices: true,
-        repository: true,
+        group: true,
       },
     });
 
-    return res.status(200).json(updatedGroup);
+    return res.status(200).json(updatedDevice);
   } catch (error) {
     console.error("Error removing device from group:", error);
     return res.status(500).json({ error: "Internal server error" });
