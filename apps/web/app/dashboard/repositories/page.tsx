@@ -28,7 +28,13 @@ import {
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
 import { Repository } from "@repo/database";
-import { GitBranch, GitCommit, GitPullRequest, Trash2, Copy } from "lucide-react";
+import {
+  GitBranch,
+  GitCommit,
+  GitPullRequest,
+  Trash2,
+  Copy,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import DeviceLinker from "@/components/dashboard/device-linker";
 import { toast } from "sonner";
@@ -58,7 +64,7 @@ export default function RepositoriesPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Repository ID copied to clipboard');
+    toast.success("Repository ID copied to clipboard");
   };
 
   const getRepositories = async () => {
@@ -75,7 +81,10 @@ export default function RepositoriesPage() {
 
   const linkDeviceToRepo = async (deviceId: string) => {
     try {
-      const response = await apiClient.linkDeviceToRepository(deviceId, deviceId);
+      const response = await apiClient.linkDeviceToRepository(
+        deviceId,
+        deviceId
+      );
       if (!response.error) {
         toast.success("Device linked successfully!");
         setIsOpen(false);
@@ -96,7 +105,7 @@ export default function RepositoriesPage() {
     try {
       const response = await apiClient.createRepository({
         name: newRepo.name,
-        url: newRepo.url
+        url: newRepo.url,
       });
 
       if (response.error) {
@@ -114,7 +123,11 @@ export default function RepositoriesPage() {
   };
 
   const handleDeleteRepository = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this repository? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this repository? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
@@ -144,7 +157,9 @@ export default function RepositoriesPage() {
         if (nameComparison !== 0) {
           return nameComparison;
         }
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
       });
       setDevices(sortedDevices);
     }
@@ -155,7 +170,9 @@ export default function RepositoriesPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Git Repositories</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Git Repositories
+          </h2>
           <p className="text-muted-foreground">
             Manage firmware and software repositories for your IoT devices
           </p>
@@ -241,44 +258,10 @@ export default function RepositoriesPage() {
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => window.open(repo.url, '_blank')}
+                    onClick={() => window.open(repo.url, "_blank")}
                   >
                     View Details
                   </Button>
-                  <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="flex-1">
-                        Configure
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Link Device to Repository</DialogTitle>
-                        <DialogDescription>Select a device to link to this repository.</DialogDescription>
-                      </DialogHeader>
-
-                      {loading ? (
-                        <p>Loading devices...</p>
-                      ) : (
-                        <Select onValueChange={(deviceId) => linkDeviceToRepo(deviceId)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a device" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {devices.length > 0 ? (
-                              devices.map((device) => (
-                                <SelectItem key={device.id} value={device.id}>
-                                  {device.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <p>No devices available</p>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </DialogContent>
-                  </Dialog>
                 </div>
               </div>
             </CardContent>

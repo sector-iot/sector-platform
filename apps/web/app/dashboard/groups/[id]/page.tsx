@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Copy } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,18 +27,8 @@ interface Group {
   id: string;
   name: string;
   description?: string | null;
-  devices: Array<{
-    device: {
-      id: string;
-      name: string;
-    };
-  }>;
-  repositories: Array<{
-    repository: {
-      id: string;
-      name: string;
-    };
-  }>;
+  devices: Device[];
+  repository: Repository | null;
 }
 
 interface Device {
@@ -277,6 +267,30 @@ export default function GroupDetailPage() {
                   disabled={!isEditing}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Group ID</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    value={group.id}
+                    disabled
+                    className="font-mono text-sm"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText(group.id);
+                      toast({
+                        title: "Success",
+                        description: "Group ID copied to clipboard",
+                      });
+                    }}
+                    className="h-10 w-10"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               <div className="flex justify-end">
                 {isEditing ? (
                   <Button onClick={handleUpdateGroup}>Save Changes</Button>
@@ -308,7 +322,7 @@ export default function GroupDetailPage() {
                       .filter(
                         (device) =>
                           !group.devices.some(
-                            (groupDevice) => groupDevice.device.id === device.id
+                            (groupDevice) => groupDevice.id === device.id
                           )
                       )
                       .map((device) => (
@@ -324,7 +338,7 @@ export default function GroupDetailPage() {
                 </Button>
               </div>
               <div className="space-y-2">
-                {group.devices.map(({ device }) => (
+                {group.devices.map((device) => (
                   <div
                     key={device.id}
                     className="flex items-center justify-between p-2 border rounded"
@@ -357,17 +371,22 @@ export default function GroupDetailPage() {
                 <Select
                   value={selectedRepository}
                   onValueChange={setSelectedRepository}
+                  disabled={!!group.repository}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select a repository" />
+                    <SelectValue
+                      placeholder={
+                        group.repository
+                          ? "Repository already linked"
+                          : "Select a repository"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {repositories
                       .filter(
                         (repo) =>
-                          !group.repositories.some(
-                            (groupRepo) => groupRepo.repository.id === repo.id
-                          )
+                          !group.repository || group.repository.id !== repo.id
                       )
                       .map((repo) => (
                         <SelectItem key={repo.id} value={repo.id}>
@@ -376,27 +395,29 @@ export default function GroupDetailPage() {
                       ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={handleLinkRepository}>
+                <Button
+                  onClick={handleLinkRepository}
+                  disabled={!!group.repository || !selectedRepository}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Link Repository
                 </Button>
               </div>
               <div className="space-y-2">
-                {group.repositories.map(({ repository }) => (
-                  <div
-                    key={repository.id}
-                    className="flex items-center justify-between p-2 border rounded"
-                  >
-                    <span>{repository.name}</span>
+                {group.repository && (
+                  <div className="flex items-center justify-between p-2 border rounded">
+                    <span>{group.repository.name}</span>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleUnlinkRepository(repository.id)}
+                      onClick={() =>
+                        handleUnlinkRepository(group.repository!.id)
+                      }
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </CardContent>

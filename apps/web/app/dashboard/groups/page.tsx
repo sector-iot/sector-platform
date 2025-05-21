@@ -36,18 +36,8 @@ interface Group {
   id: string;
   name: string;
   description?: string;
-  devices: Array<{
-    device: {
-      id: string;
-      name: string;
-    };
-  }>;
-  repositories: Array<{
-    repository: {
-      id: string;
-      name: string;
-    };
-  }>;
+  devices: Device[];
+  repository: Repository | null;
 }
 
 interface Device {
@@ -83,7 +73,7 @@ export default function GroupsPage() {
       const { data, error } = await apiClient.getGroups();
       if (error) throw new Error(error.message);
       // Transform data to match Group type
-      const transformedData = (data || []).map(group => ({
+      const transformedData = (data || []).map((group) => ({
         ...group,
         description: group.description || undefined, // Ensure description is undefined if null
       }));
@@ -132,7 +122,7 @@ export default function GroupsPage() {
         description: newGroupDescription,
       });
       if (createError) throw new Error(createError.message);
-      
+
       if (!group) {
         toast({
           title: "Error",
@@ -182,7 +172,7 @@ export default function GroupsPage() {
 
   const handleDeleteGroup = async (groupId: string) => {
     try {
-      const group = groups.find(g => g.id === groupId);
+      const group = groups.find((g) => g.id === groupId);
       if (!group) {
         toast({
           title: "Error",
@@ -383,7 +373,7 @@ export default function GroupsPage() {
                 <div className="space-y-2">
                   <h4 className="font-medium">Devices</h4>
                   <div className="space-y-2">
-                    {group.devices.map(({ device }) => (
+                    {group.devices.map((device) => (
                       <div
                         key={device.id}
                         className="flex items-center justify-between"
@@ -402,28 +392,28 @@ export default function GroupsPage() {
                     ))}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium">Repositories</h4>
+                {group.repository && (
                   <div className="space-y-2">
-                    {group.repositories.map(({ repository }) => (
-                      <div
-                        key={repository.id}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-sm">{repository.name}</span>
+                    <h4 className="font-medium">Repository</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">{group.repository.name}</span>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() =>
-                            handleUnlinkRepository(group.id, repository.id)
+                            handleUnlinkRepository(
+                              group.id,
+                              group.repository!.id
+                            )
                           }
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"

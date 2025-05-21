@@ -49,16 +49,8 @@ export const getGroups = async (req: Request, res: Response) => {
         userId,
       },
       include: {
-        devices: {
-          include: {
-            device: true,
-          },
-        },
-        repositories: {
-          include: {
-            repository: true,
-          },
-        },
+        devices: true,
+        repository: true,
       },
     });
 
@@ -84,16 +76,8 @@ export const getGroup = async (req: Request, res: Response) => {
         userId,
       },
       include: {
-        devices: {
-          include: {
-            device: true,
-          },
-        },
-        repositories: {
-          include: {
-            repository: true,
-          },
-        },
+        devices: true,
+        repository: true,
       },
     });
 
@@ -188,14 +172,21 @@ export const addDeviceToGroup = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Group or device not found" });
     }
 
-    const groupDevice = await prisma.groupDevice.create({
+    // Update the group to include the device
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
       data: {
-        groupId,
-        deviceId,
+        devices: {
+          connect: { id: deviceId },
+        },
+      },
+      include: {
+        devices: true,
+        repository: true,
       },
     });
 
-    return res.status(201).json(groupDevice);
+    return res.status(200).json(updatedGroup);
   } catch (error) {
     console.error("Error adding device to group:", error);
     return res.status(400).json({ error: "Invalid input" });
@@ -223,16 +214,21 @@ export const removeDeviceFromGroup = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Group not found" });
     }
 
-    await prisma.groupDevice.delete({
-      where: {
-        groupId_deviceId: {
-          groupId,
-          deviceId,
+    // Update the group to remove the device
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
+      data: {
+        devices: {
+          disconnect: { id: deviceId },
         },
+      },
+      include: {
+        devices: true,
+        repository: true,
       },
     });
 
-    return res.status(204).send();
+    return res.status(200).json(updatedGroup);
   } catch (error) {
     console.error("Error removing device from group:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -268,14 +264,20 @@ export const linkRepositoryToGroup = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Group or repository not found" });
     }
 
-    const repositoryGroup = await prisma.repositoryGroup.create({
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
       data: {
-        groupId,
-        repositoryId,
+        repository: {
+          connect: { id: repositoryId },
+        },
+      },
+      include: {
+        devices: true,
+        repository: true,
       },
     });
 
-    return res.status(201).json(repositoryGroup);
+    return res.status(200).json(updatedGroup);
   } catch (error) {
     console.error("Error linking repository to group:", error);
     return res.status(400).json({ error: "Invalid input" });
@@ -306,16 +308,20 @@ export const unlinkRepositoryFromGroup = async (
       return res.status(404).json({ error: "Group not found" });
     }
 
-    await prisma.repositoryGroup.delete({
-      where: {
-        repositoryId_groupId: {
-          repositoryId,
-          groupId,
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
+      data: {
+        repository: {
+          disconnect: true,
         },
+      },
+      include: {
+        devices: true,
+        repository: true,
       },
     });
 
-    return res.status(204).send();
+    return res.status(200).json(updatedGroup);
   } catch (error) {
     console.error("Error unlinking repository from group:", error);
     return res.status(500).json({ error: "Internal server error" });

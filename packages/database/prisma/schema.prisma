@@ -24,8 +24,7 @@ model User {
   devices       Device[]
   repositories  Repository[]
   groups        Group[]
-
-  apikeys Apikey[]
+  apikeys       Apikey[]
 
   @@unique([email])
   @@map("user")
@@ -86,7 +85,7 @@ model Device {
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   repositoryId String?
   repository   Repository? @relation(fields: [repositoryId], references: [id])
-  groups       GroupDevice[]
+  groups       Group[]     // Many-to-many relationship with Group
 
   @@map("device")
 }
@@ -103,33 +102,10 @@ model Group {
   updatedAt    DateTime     @updatedAt
   userId       String
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  devices      GroupDevice[]
-  repositories RepositoryGroup[]
+  devices      Device[]     // Many-to-many relationship with Device
+  repositoryId String?
+  repository   Repository?  @relation(fields: [repositoryId], references: [id])
   firmwareBuilds FirmwareBuilds[]
-}
-
-model GroupDevice {
-  id        String   @id @default(cuid())
-  groupId   String
-  deviceId  String
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([groupId, deviceId])
-}
-
-model RepositoryGroup {
-  id           String     @id @default(cuid())
-  repositoryId String
-  groupId      String
-  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
-  group        Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@unique([repositoryId, groupId])
 }
 
 model Repository {
@@ -141,8 +117,8 @@ model Repository {
   userId         String
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   devices        Device[]
+  groups         Group[]
   firmwareBuilds FirmwareBuilds[]
-  groups         RepositoryGroup[]
 }
 
 model FirmwareBuilds {
@@ -152,7 +128,7 @@ model FirmwareBuilds {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   repositoryId String
-  repository   Repository? @relation(fields: [repositoryId], references: [id])
+  repository   Repository  @relation(fields: [repositoryId], references: [id])
   groupId      String?
   group        Group?      @relation(fields: [groupId], references: [id])
   status       BuildStatus @default(BUILDING)

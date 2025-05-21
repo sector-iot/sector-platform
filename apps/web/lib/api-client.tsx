@@ -11,12 +11,8 @@ type DeviceWithRepository = Device & {
 };
 
 type GroupWithRelations = Group & {
-  devices: Array<{
-    device: Device;
-  }>;
-  repositories: Array<{
-    repository: Repository;
-  }>;
+  devices: Device[];
+  repository: Repository | null;
 };
 
 type ApiResponse<T> = {
@@ -38,7 +34,7 @@ export class ApiClient {
   private defaultHeaders: Record<string, string>;
 
   constructor(
-    baseUrl: string = `${process.env.NEXT_PUBLIC_API_URL as string ?? "https://api.sector-iot.space"}/api`
+    baseUrl: string = `${(process.env.NEXT_PUBLIC_API_URL as string) ?? "https://api.sector-iot.space"}/api`
   ) {
     this.baseUrl = baseUrl;
     this.defaultHeaders = {
