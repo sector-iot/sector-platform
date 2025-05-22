@@ -46,8 +46,6 @@ export const firmwareBuildController = {
         },
       });
 
-      console.log("Repository groups:", repository?.groups);
-
       if (!repository) {
         return res.status(404).json({ error: "Repository not found" });
       }
@@ -104,6 +102,9 @@ export const firmwareBuildController = {
       // For example, "3.0.0" becomes 3.0
       const versionAsFloat = parseFloat(nextVersion.replace(/\.(\d+)$/, ""));
 
+      // Get the group ID from the repository if available
+      const groupId = repository.groups[0]?.id;
+
       const firmwareBuild = await prisma.firmwareBuilds.create({
         data: {
           url: data.url,
@@ -112,11 +113,13 @@ export const firmwareBuildController = {
               id: data.repositoryId,
             },
           },
-          group: {
-            connect: {
-              id: repository.groups[0]?.id,
-            },
-          },
+          group: groupId
+            ? {
+                connect: {
+                  id: groupId,
+                },
+              }
+            : undefined,
           version: versionAsFloat,
           status: data.status || "BUILDING",
         },
