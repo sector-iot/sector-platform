@@ -34,7 +34,7 @@ export function DeviceOverview() {
   const [groups, setGroups] = useState<GroupWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  console.log("Hi");
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
