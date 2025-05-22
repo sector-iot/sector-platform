@@ -98,9 +98,13 @@ export function DeviceOverview() {
     )
     .map((build) => {
       const date = new Date(build.createdAt);
+      // Extract major version number from version string (e.g., "1.2.3" -> 1)
+      const majorVersion = build.version
+        ? parseInt(build.version.toString().split(".")[0])
+        : 0;
       return {
         date: `${date.getDate()}/${date.getMonth() + 1}`,
-        version: build.version,
+        version: majorVersion,
         status: build.status,
         statusValue:
           build.status === "SUCCESS" ? 2 : build.status === "BUILDING" ? 1 : 0,
